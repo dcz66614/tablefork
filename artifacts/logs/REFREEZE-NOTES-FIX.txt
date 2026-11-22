@@ -1,0 +1,155 @@
+P029 TableFork — REFREEZE-NOTES-FIX 验收日志
+=============================================
+目的：修正重冻结清单 review/RELEASE_MANIFEST.json 的 notes 的一处误标措辞
+（把打包时 HEAD 提交 b7e1023 称为“冻结提交”），并把 0 文件机械重生成
+的别扭渲染“生成的 （0 个文件）”改成干净句子。规格 v1.0.2；基线提交
+6c81860（P029-FIX-04 handoff 提交，即冻结前的最新代码状态）不变。
+模板修正见 scripts/verify_release.mjs 的 buildManifestNotes()。
+
+提交拓扑（沿用重冻结的三提交先例，不 amend）
+-----------------------------------------------
+D c4fdd818a00005bf25f407d8bd0c5f3706d9e7c1
+  P029-REFREEZE: handoff (result_commit ca8bed6)（原冻结提交 ca8bed6 的交接）
+E1 5b3753002053c371bc7b269f9b02665e60f0b919
+  P029-REFREEZE-NOTES-FIX: fix buildManifestNotes wording (no freeze-commit
+  hash, clean 0-file rendering), spec v1.0.2
+  仅改 scripts/verify_release.mjs：删除 frozenCommit 参数（误标的来源——
+  生成清单时冻结提交尚不存在，旧模板把打包时 HEAD 的哈希填进去叫
+  “冻结提交”）；0 文件时渲染“打包时无机械重生成文件”；第一句写清
+  base_commit = 本次冻结的工作基线提交（T013 的 base_commit；FIX-04
+  的 handoff 提交）；冻结提交改由 handoffRef 所指 result_commit 为准，
+  不再在 notes 里插值任何提交哈希称其为冻结提交。
+E2 （本提交）P029-REFREEZE-FIX: correct manifest notes wording
+  (packaged_from_head vs freeze commit), spec v1.0.2
+  新 RELEASE_MANIFEST、重打的 source ZIP、REVIEW_PACK_05、REVIEW_INDEX、
+  本日志。dist ZIP 未变（见下）。
+E3 （随后另起提交）P029-REFREEZE-NOTES-FIX: handoff（result_commit 见
+  task_handoffs/P029-REFREEZE-NOTES-FIX.json，即 E2 的完整 SHA）。
+
+与任务字面要求的偏差（请协调员裁决——以下四点均由仓库自身的校验逻辑强制，
+不是执行员自选；若按任务字面“ZIP 不变”执行，verify:release 必 FAIL）
+--------------------------------------------------------------------------------
+任务的前提是“只改 notes 文字，ZIP 不变”：它假定只有 REVIEW_INDEX.md
+变了才需重打 ZIP，且 REVIEW_INDEX.md 不记录清单 SHA 故 ZIP 不变。
+核查证明该前提不成立——改模板的文件本身就在发布包内：
+
+ 1. scripts/verify_release.mjs 在清单 192 文件内（旧哈希
+    4819b6ca…/29950 B），且在 source ZIP 的 192 条目内；它还以全文块
+    嵌在 review/REVIEW_PACK_05.md（块头 SHA 与清单一致，由 verify
+    检查 (d) 核对），并以 SHA+行数列在 review/REVIEW_INDEX.md 第 31 行。
+    改模板一字即改该文件字节 → 清单的该文件条目、PACK_05 的该块、
+    INDEX 的该行全部过期；只改 notes 不动它们，verify:release 的
+    “清单哈希与工作树一致”与“分卷块 SHA 与清单一致”两项必 FAIL。
+ 2. 故 source ZIP 必须重打（同 192 文件集，内容换入新脚本/新卷/新索引），
+    其 SHA 由 3d023f3b… 变为 d7b38e55…（见下）。dist ZIP 不含该脚本，
+    全新构建重打后逐字节一致，SHA 不变 e0a2ce5e…。
+ 3. packaged_from_head 不能维持 b7e1023：新 ZIP 的树 ≠ B 的树（3 文件
+    不同：脚本、PACK_05、INDEX）。维持旧值会使 notes 的等式
+    “ZIP = packaged_from_head 的树 + 机械重生成文件”成假话。执行时把
+    脚本修正先单独提交为 E1，再以 E1 为打包时 HEAD 生成清单与 ZIP：
+    packaged_from_head = 5b37530…（E1）；机械重生成文件 = 2 个
+    （REVIEW_PACK_05.md 与 REVIEW_INDEX.md，由分卷生成器在打包时重生成；
+    脚本已在 E1 的树内，不算重生成）。notes 的等式因此为真。
+ 4. notes 的冻结提交引用由 task_handoffs/P029-REFREEZE.json 改为
+    task_handoffs/P029-REFREEZE-NOTES-FIX.json：前者 result_commit 是
+    原冻结提交 ca8bed6，新 ZIP 的树 ≠ ca8bed6 的树（3 文件不同），沿用
+    它会重犯同类误标；新冻结提交是 E2，由本次交接 JSON 的 result_commit
+    指明。REVIEW_INDEX.md 本身不记录清单 SHA（grep 清单 SHA 为 0），
+    但它记录脚本 SHA 与 PACK_05 的 SHA，故仍须联动更新（5 行，见下）。
+
+修正前后 notes 全文对照
+------------------------
+修正前（原清单，模板旧措辞）：
+源码 ZIP 文件名中的短 SHA 为基线提交 6c81860（T013 的 base_commit）。
+packaged_from_head：生成清单与源码 ZIP 时的 HEAD 提交
+（b7e102350b5decef63478eb8200fe0f6f1654bef）。源码 ZIP 所打包的是打包时
+的工作树：其内容等于 packaged_from_head 的树 + 打包时机械重生成的
+（0 个文件），等于冻结提交 b7e1023 的树（逐文件一致）。verify:release
+检查 (a) 拿 ZIP 对 git HEAD（冻结提交）比对，不是直接对
+packaged_from_head。冻结发布提交（result_commit）见
+task_handoffs/P029-REFREEZE.json。本清单由 P029-REFREEZE 从修复提交
+重新生成。
+
+修正后（新清单，由修正后的 buildManifestNotes() 模板生成；0 文件分支
+另经 node 导入模板单独验证，输出“打包时无机械重生成文件”，无
+“（0 个文件）”、无任何“冻结提交 <哈希>”式误标）：
+源码 ZIP 文件名中的短 SHA 为本次冻结的工作基线提交 6c81860（T013 的
+base_commit；FIX-04 的 handoff 提交）。packaged_from_head：生成清单与
+源码 ZIP 时的 HEAD 提交（5b3753002053c371bc7b269f9b02665e60f0b919）。
+源码 ZIP 所打包的是打包时的工作树：其内容等于 packaged_from_head 的树
++ 打包时机械重生成的文件（review/REVIEW_INDEX.md 与
+review/REVIEW_PACK_05.md，2 个文件）。除清单自指排除的文件（清单自身、
+发布 ZIP、重冻结日志）外，与冻结发布提交的树逐文件一致（冻结提交以
+task_handoffs/P029-REFREEZE-NOTES-FIX.json 所指 result_commit 为准）。
+verify:release 检查 (a) 拿 ZIP 对 git HEAD（冻结提交）比对，不是直接对
+packaged_from_head。冻结发布提交（result_commit）见
+task_handoffs/P029-REFREEZE-NOTES-FIX.json。本清单由
+P029-REFREEZE-NOTES-FIX 从修复提交重新生成。
+
+变化总表（修正前 -> 修正后）
+-----------------------------
+base_commit：6c81860 -> 6c81860（不变）
+packaged_from_head：b7e102350b5decef63478eb8200fe0f6f1654bef
+  -> 5b3753002053c371bc7b269f9b02665e60f0b919（E1；见偏差 3）
+清单文件总数：192 -> 192（不变；仅 3 个条目更新哈希/字节数）
+  scripts/verify_release.mjs：4819b6ca…/29950 B/668 行
+    -> 5e2a2a9f…/31538 B/685 行
+  review/REVIEW_PACK_05.md：7db4fab4…/83308 B
+    -> 3d0336f4…/84906 B（7 文件；仅脚本块 + 卷头“生成：”行变）
+  review/REVIEW_INDEX.md：b76323e0…/29654 B
+    -> 63faff12…/29654 B（5 行：HEAD、PACK_05 分卷表行、脚本代码表行、
+    PACK_05 非代码表行、自指行改为指向上版索引 b76323e0…/29654）
+  其余 189 条目逐字不变；REVIEW_PACK_01..04 逐字节不变（生成器重跑后
+  仅卷头“生成：”行不同，已 revert，只留 PACK_05）。
+source ZIP tablefork-source-6c81860.zip：3,740,523 B
+    sha256 3d023f3b50a12173311ed82763350074f8d6b71a542f7bca21043949f370de27
+  -> 3,741,576 B
+    sha256 d7b38e5554a292d0e2bd065184920077c44f250c9f2bf6b41e649ce70e69f497
+  （确定性打包两次逐字节相同；变化原因见偏差 2）
+dist ZIP tablefork-dist-6c81860.zip：98,874 B
+    sha256 e0a2ce5e39e69981d7cdec406cd7c1e0a7585bd20eaef18e16f58473c89d5602
+  -> 不变（全新构建重打逐字节一致）
+packaged_at_utc：2026-11-21T11:39:34.465Z -> 随本次生成时间更新（正常）
+
+生成方法
+--------
+清单与 ZIP 由 ~/workspace/p029-notesfix-manifest.mjs 生成（不提交；沿用
+p029-refreeze-manifest.mjs 的结构，但定点复用当前清单的 192 路径表，
+不用全新扫描——全新扫描会把打包后才入树的
+artifacts/logs/REFREEZE-FIXR1.txt 与 task_handoffs/P029-REFREEZE.json
+也扫进来，使文件集 192 -> 194）。PACK_05 与 INDEX 由
+~/workspace/p029-refreeze-generator.mjs（已验证可逐字节复现 R1 分卷）
+重生成后定点取舍：PACK_01..04 仅卷头“生成：”行不同，已 revert；
+INDEX 取生成器的 PACK_05 产物，另 5 行定点更新（不用生成器的 INDEX，
+因其全新扫描会把文件集写成 194，与清单 192 矛盾）。
+外部生成器 ~/workspace/p029-refreeze-manifest.mjs 的调用已同步修正：
+删除已不存在的 frozenCommit 参数传递（模板已删除该参数；多余属性
+会被忽略，但不再传错值）。
+
+全量验收（提交前，HEAD=E1；TMPDIR=~/workspace/p029-tmpdir，
+NODE_COMPILE_CACHE=$HOME/.node-compile-cache-p029；e2e 未跑，
+故两个易变日志文件未写脏，无需 git checkout 恢复）
+--------------------------------------------------------------------------------
+npm run typecheck        exit 0
+npm run test:core        exit 0 — 745/745（11 文件）
+npm run oracle           exit 0 — 49/49 passed（0 failed，含 G49）
+npm run build            exit 0 — 48 模块；Worker chunk
+                         dist/assets/tablefork.worker-CnACUpDX.js（与 FIX-04 一致）
+npm run verify:release   提交前 20/21 PASS，1 FAIL 是预期内的提交前状态：
+                         “fresh git archive HEAD matches source zip contents”
+                         190/192——PACK_05 与 INDEX 是相对 HEAD=E1 的未提交
+                         修改，git archive 取的是 HEAD 里的旧版，故 2 文件
+                         不一致；其余 20 项全 PASS（含 ZIP 内容 192/192、
+                         清单哈希与工作树 190/190、dist 与全新构建逐字节一致、
+                         分卷 5/5、代码文件 50/50、索引分卷表一致）。
+                         提交后（HEAD=E2）重跑须为 RESULT: PASS（0 failing），
+                         该结果见交接 JSON task_handoffs/P029-REFREEZE-NOTES-FIX.json。
+
+遗留
+----
+- 原冻结提交 ca8bed6 与新冻结提交 E2 的关系：E2 的树 = ca8bed6 的树 +
+  本次修正（脚本模板、PACK_05、INDEX、清单、source ZIP、本日志）+
+  E1 的脚本提交；R2 以 E2 为准，ca8bed6 仅为 lineage 上的上一冻结。
+- 本次未跑 test:e2e / test:e2e:perf（任务验收不含）；E2 提交后如需，
+  e2e 会写脏 T012-cancel-probe.json 与 T012-perf-browser.json，
+  提交前须 git checkout 恢复（本卡未触发）。

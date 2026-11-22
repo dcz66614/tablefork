@@ -1,0 +1,9 @@
+bundle/
+drive-copies/
+v1.0.0-archive/
+*.zip
+!artifacts/release/*.zip
+node_modules/
+dist/
+.DS_Store
+__pycache__/

@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G20",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><th scope=\"row\">R1</th><td rowspan=\"2\">M</td><td>x</td></tr><tr><th scope=\"row\">R2</th><td>y</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G20"
+}

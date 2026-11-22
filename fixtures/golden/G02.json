@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G02",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>名称</th><th>数量</th></tr></thead><tbody><tr><td>苹果</td><td>3</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G02"
+}

@@ -1,0 +1,530 @@
+# P029-T011 evidence log — 48 Golden + 200 fixed-seed independent regression
+# Generated: 2026-11-21T03:32–03:41Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 4ddfe51 (P029-T010 handoff).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T011 48 Golden + 200 固定种子独立回归 — fixtures/golden/G01..G48.json,
+#        tests/core/* (takeover of 7 temporary test files + new golden.test.ts),
+#        tests/property/* (200 fixed seeds, TS core vs Python Oracle).
+# Environment: Node v24.22.1, npm 10.9.4, TypeScript 5.9.3, Vitest 4.1.12, Python 3.12.3
+#   (this VM has no `python`; every Python invocation below uses `python3`).
+# No external model API called; no Qoder; no password/key files touched.
+# WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).
+#
+# *** RESULT: FAIL — one real cross-implementation inconsistency, found by this
+# card's own comparison and NOT papered over (see §8). ***
+# The single divergent field is `facts` (SlotFact coverage): the TS core emits
+# one SlotFact per TD-occupied slot (spec §5.4 / G04 "逐数据格"); the Python
+# Oracle's hand-computed `facts` emits one per slot for EVERY slot, including
+# TH-occupied slots. Every other compared field agrees on all 48 Goldens and
+# all 200 seeds. First inconsistency: G02 (Golden) / seed 0 (property).
+# The failing tests are kept failing (no skip, no expected-fail, no
+# back-filled expectations); the fix belongs to a new card (Oracle-side
+# narrowing per §5.4/G04 is recommended in §8) and this card must be re-run
+# after it.
+
+## 1. Acceptance commands (real output; run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0 (no output beyond the npm banner).
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 1
+  Test Files: 2 failed | 7 passed (9)
+  Tests: 205 failed | 509 passed (714)
+  Per file: grid 67/67, flatten 19/19, witness 17/17, compare 29/29,
+    report 17/17, sha256 8/8, worker 13/13 (all taken-over files 170/170 pass);
+    golden.test.ts 339 tests: 24 failed / 315 passed;
+    crosscheck.test.ts 205 tests: 181 failed / 24 passed.
+  ALL 205 failures are the single `facts` field (see §8); no other field
+  failed anywhere.
+- npm run oracle (python3 oracle/reference.py --fixtures fixtures/golden
+  --expected oracle/golden_expected.json): exit 0, "48/48 passed (0 failed)".
+  This command could run for the first time only after this card created
+  fixtures/golden/ (T006 §5.4 recorded it NOT_RUN for exactly this reason).
+  The Oracle's self-check compares the Oracle's own output against its own
+  hand-computed expectations; it does NOT compare against the TS core, so
+  48/48 here does not contradict the TS-vs-Oracle `facts` divergence in §8.
+- npm test (vitest run, all suites incl. tests/property): exit 1
+  Test Files: 2 failed | 7 passed (9)
+  Tests: 205 failed | 509 passed (714)
+  (No tests/e2e suite exists yet — T012 scope; `npm test` ran the same 9 files
+  as test:core.)
+- Baseline before this card (T010 log): npm run test:core 170/170, exit 0.
+  This card adds 339 golden + 205 property = 544 new tests; total 714.
+
+## 2. 48 Golden fixtures (fixtures/golden/G01..G48.json)
+Generation: /tmp/gen-golden.mjs (NOT committed) read oracle/golden_expected.json
+and wrote one fixture per entry in IMPLEMENTATION_PLAN §4.3 format
+{fixture_id, schema: "tablefork.fixture/v1",
+ input: {schema: "tablefork.input/v1", html, strategy}, expected_ref}.
+Verification (same script, per file, before writing the log): each written
+fixture's input.html was re-read and compared with strict equality (===) to
+the same-ID entry's input.html in golden_expected.json, and strategy /
+fixture_id / expected_ref were checked too. Result: 48/48 ok=true, zero
+mismatches. No input was invented by this card: every input comes from the
+T006 hand-computed file, same ID, same html, same strategy.
+Per-file bytes are the file sizes on disk; SHA-256 is over the file bytes
+(sha256sum, re-run after generation):
+G01.json 276 309728ad4d460096f170348587262a9cf448bd5914493c1751172c67dc4320f2
+G02.json 306 2cefd2f02ac9b887370e537f785daacb206408dd9a24984758084e2d8fab6fed
+G03.json 361 4afe6d7e2dfef0cc09bf2aeb6bd247b218f509751da129bd2fd8db5770a9b6fe
+G04.json 291 5d57a4ac3272dc1568c7e182e1c2b8e21a7f0d01a232f92110ae9bd6218e850b
+G05.json 242 9a9f4eb92392f15cd87fa14299e8ddbec11a3993486b95ee15dd723e0d376cea
+G06.json 251 1398cadd1dc07c8bb1a6faeaf2345a2d69f3b8c2cfcec239ded6628a09f0a882
+G07.json 314 69fee0d54d31c60257b757d82332326913eca9fbcab0732cb2142bbd25ac4861
+G08.json 305 825dda4ff726e20fa51de22809f3574435dc3597a205e15d62becd013c5a859f
+G09.json 385 68c65714d6b50ff408c5eda696da225aa1f1357b03004d5a4c236a62b225e09b
+G10.json 364 1a065802b471fb2b0bd608261bb9bf8a3651fae5cf6985387afa18b47161a00a
+G11.json 305 2c58a608074003c8ca88953fefb2e54551a4db25492caaae5eeb623b0fcece5d
+G12.json 356 757870796aa4324534786dcfa5705616eca40d972190c8417adc75d9e9a0f14f
+G13.json 338 1441d5839dc726ef2e7bfee71b1246e2c326f51efbbaf85aeca19016bf26f8bb
+G14.json 418 ad2cd2b4aebda2ae603a1dc8f05d58452798dc2797c59ea1f2e13cec22ee7276
+G15.json 299 ab4ba2b4ae973c13a339aa9cb87db3122d4e7b3654dc39ba47edc5c2f839bc94
+G16.json 328 037dea332d5807435ab696ea088d645e13c56c18dcd5441eaf3ffeb31c0832d4
+G17.json 357 4374131626aedc935a4c9a535cab9988ac87f5bb6be9ff9df18ab57fb69d7149
+G18.json 301 ea03170943d711649dc84764a5cddd993a1378790b5bf502d632943c10831b75
+G19.json 330 317a8f373eb39ab841320b86b11136bd62e7b540c0ad429e41e8efa9a3145eee
+G20.json 330 362310e94e5a018c6712d54ed2680eb664cfa45b787d1546f394cc5575daa340
+G21.json 293 a6b7b87b99b626b1f11d89feb357e4545920a927b379222ba37bc4a3b932fd10
+G22.json 359 127cc574822e279c008d213ce3640959f7c1f77caaa15311689c828dd3b4aec7
+G23.json 296 101d1d147b3d4ea4f655aed3e63b1586053fc611e42749f02472195b05d8550c
+G24.json 390 c154b9ce6c5725f48fba339cf44d9684584fbd6b522732a85c217b9adfd3e495
+G25.json 391 a8a5d4c39c89f50eeb427dfd0a7ab61a671f23a86f1b6fb3282991955bb02be8
+G26.json 354 27a6963e7d2a6cea91a69be799871c36c48151df391a4f2033bca97e0f1ba791
+G27.json 328 e10093a13f5978820bb2076dbeeac5762de99a3aa678ecff15b570df6b470280
+G28.json 346 d68c8bc8d90ae443f55a28e8acfdf4485eceefc92f53d7748cfec2a58fd181e4
+G29.json 395 8077620aac5a915dd05d720fc9748cddd9f340d2f3b3c33c5f06fb8327fe9284
+G30.json 382 1d9fbce342eee7b1a05afe2d34fe9cee9518d805631a497ef6a74a0fc60a03df
+G31.json 411 abd99dc02e26896d99cbe0c02432131f589e4d102317f3cb552e51523f9a8841
+G32.json 339 93a1be32ac66fada8d61bbd4667bee606e8983d8fa18d4833fd0f339aa3f6bbf
+G33.json 285 385110fd29e3b04caaa17d6e78e7452dab5d4f702701f67a2d9b72444b061c44
+G34.json 306 fc84c57277f308bf7baa5d5b7be3e57a43210f100a98d71dd04ef6156684997c
+G35.json 332 9a99525526cccb2a8e554d48aaf31818aa273cdd9c24b2bf5e597788425a2f1f
+G36.json 326 61ef7ff185872df2da70596632c7054c339dc611485ce1fa72d7cceeeba3f519
+G37.json 303 28a11ab342d50f3e5e001dc0ccd57e37efaa458d584b604271d9e24793dc0a07
+G38.json 271 d2063d6552a41da81a3f907550c67d4e5ff16000e425e319d7fa36dafc4381c7
+G39.json 300 6eaa513022a8eea079a39f7152a04118748c270b59ddc9c68d6f69f310636812
+G40.json 368 a85cf92cba2d212f8865dac64f99864fdb8f7bf00dec199eb6aaafcb26fe1995
+G41.json 272 023ee77f32576f57a7647516e5d3156399fae6482996a0d5cad43768e45eec10
+G42.json 294 e31d35c7071fc9810269d999b19cd7895e81e859501a721caec71e31aff52e72
+G43.json 266 b9382bb81fc7568854ad37c2b0c73fe46cd87c09824071c3a6822bdf802af243
+G44.json 251 73e786f49bd383558bc8598aae5ac6387a5906dad2a1ed9746aec4915e9430b1
+G45.json 252 0be66e215b6d7ec061c1f50127ea09a2c9f97b8fc272e71745cd6bf8791f2865
+G46.json 266 59b19ba0b789ae0c9899a953038df15e2e6e40175503c435354f37454533f463
+G47.json 305 68d6da0c2016a2f967176a17b17a1e2174db4bd2fb81a0c5951f62918d63ee13
+G48.json 361 2d2ebe11ae8e431c700c6bdf312c88f279c37b7352091ae7274eff094d4e9c09
+
+Total: 48 files, 15499 bytes (du -sb fixtures/golden).
+Group counts (PROJECT_BOOK §7.1): G01–G08 8, G09–G16 8, G17–G24 8,
+G25–G32 8, G33–G40 8, G41–G48 8.
+
+## 3. 每组手工预言来源（预期只从 oracle/golden_expected.json 取，未用 TS 输出回填）
+The 48 expectations were hand-computed by T006 (see artifacts/logs/T006-oracle.txt).
+This card did not re-derive them; it only mechanically copied the inputs into
+fixtures and compared the TS core against the hand values. Sources per group:
+- G01–G08 (无合并、单行列标题、空标题与空数据）: T006 log §6 seeds G01, G03
+  (full derivations) + §7 summaries G02, G04–G08.
+- G09–G16 (colspan=2/3、header 分组、两种策略）: T006 log §6 seeds G09, G10,
+  G14 (full derivations) + §7 summaries G11–G13, G15–G16. G16's handover was
+  corrected in T006 §8 item 2 (the hand list missed the two thead td slots;
+  five lines, spec §5.4 "对每个 td 占用的槽位" with no section qualifier).
+- G17–G24 (rowspan=2/3、scope=row、跨行数据）: T006 log §6 seeds G17, G19
+  (full derivations) + §7 summaries G18, G20–G24.
+- G25–G32 (行列同时合并、多个候选、最小代价排序）: T006 log §6 seeds G25,
+  G30 (full derivations) + §7 summaries G26–G29, G31–G32. G28's B was
+  corrected in T006 §8 item 3 (phantom continuation cell removed; row 3 has
+  only the single DOM cell d). G30's alternativeHtml attribute order was
+  settled in T006 §8 item 1 (rowspan, colspan, scope — recorded as O6).
+- G33–G40 (CJK、|、反斜杠、Unicode、引号、实体、空白正规化）: T006 log §6
+  seeds G33, G36 (full derivations) + §7 summaries G34–G35, G37–G40.
+- G41–G48 (应拒绝样本）: T006 log §6 seed G42 (overlap derivation) + §7
+  summaries G41, G43–G48. Expected error codes: G41 UNSUPPORTED_NESTED_TABLE,
+  G42 INVALID_GRID_OVERLAP, G43 INVALID_RAGGED_GRID, G44 INVALID_SPAN,
+  G45 UNSUPPORTED_HEADER_SEMANTICS, G46 UNSUPPORTED_HEADER_SEMANTICS,
+  G47 INVALID_SPAN, G48 OVER_SIZE.
+- T006 §8 corrections applied in the expectations this card compares against:
+  (1) alternativeHtml attribute order (rowspan, colspan, scope); (2) G16
+  handover 3 -> 5 lines; (3) G28 B cells 8 -> 7 (phantom continuation removed,
+  hashes re-filled). All three were hand errors found by the Oracle, fixed in
+  the hand derivation with written reasons — not back-filled from a program.
+
+## 4. 200 固定种子明细
+Seed list: 0–199 inclusive (tests/property/generator.ts, SEEDS constant).
+Generator (tests/property/generator.ts): mulberry32 PRNG seeded per table
+(seed >>> 0); no Date / Math.random / I/O — the same seed always yields the
+same table (a determinism test re-generates all 200 and asserts identical HTML).
+Rules (frozen subset only, PROJECT_BOOK §3.1): single top-level <table>,
+optional <caption>, optional single <thead>, optional single <tbody>
+(thead-only ~5%); 1–8 rows, 1–8 cols (large seeds, seed % 25 == 0: up to
+8 rows x 8 cols); rowspan/colspan 1–3, never crossing the thead/tbody boundary;
+roles thead th (85%) / td, tbody td (78%) / th scope=row / th without scope;
+scope=col only in thead; never scope=rowgroup/colgroup, never headers=,
+never unknown attributes (O1 is out of the agreed-legal subset — probed
+separately in §8, not mixed into the 200). Cell texts mix CJK/ASCII words,
+number-like strings ("007", 17-digit, "1e5"), empty/whitespace, "|" and
+backslash combos, entities ("&amp;", "&lt;", "&#65;&#x42;", "&foo;", "&amp"
+unterminated, "&nbsp;"), emoji/full-width, quotes, Markdown metacharacters.
+Attribute order (rowspan/colspan/scope) varies deterministically.
+Placement follows first-free-column order; every free slot gets a cell, so
+every generated grid is fully covered with no overlap and no ragged row.
+Validity guard: a test asserts every one of the 200 tables is accepted (no
+error) by BOTH implementations — result: valid-tables=200, error-agreements=0.
+(A generator bug found during this card — span rectangles were chosen without
+checking that all covered slots were free, so early seeds were overlapping
+invalid tables that both sides merely agreed to reject — was fixed in the
+generator by shrinking w then h until the rectangle is entirely free, and the
+suite re-run; see §8 item 4.)
+Oracle transport: tests/property/oracle_driver.py (batch JSONL in/out, imports
+oracle/reference.py by path, calls analyse() once per table, both strategies
+in one call; adds no semantics; unexpected Python exceptions are reported as
+oracle_error, never as agreement).
+Per-seed table (from the vitest summary test output; rows x cols, DOM cells,
+AGREE or first differing field):
+seed=0 7x6 cells=19 DIFF facts: length differs (expected 42, got 24)
+seed=1 2x4 cells=4 DIFF facts: length differs (expected 8, got 4)
+seed=2 4x2 cells=7 DIFF facts: length differs (expected 8, got 4)
+seed=3 3x3 cells=8 DIFF facts: length differs (expected 9, got 3)
+seed=4 4x2 cells=7 DIFF facts: length differs (expected 8, got 4)
+seed=5 6x2 cells=11 DIFF facts: length differs (expected 12, got 7)
+seed=6 2x4 cells=4 DIFF facts: length differs (expected 8, got 4)
+seed=7 1x6 cells=5 AGREE
+seed=8 4x2 cells=5 AGREE
+seed=9 5x1 cells=4 DIFF facts: length differs (expected 5, got 3)
+seed=10 6x5 cells=15 DIFF facts: length differs (expected 30, got 23)
+seed=11 4x4 cells=7 DIFF facts: length differs (expected 16, got 10)
+seed=12 1x4 cells=3 AGREE
+seed=13 1x1 cells=1 DIFF facts: length differs (expected 1, got 0)
+seed=14 4x4 cells=12 DIFF facts: length differs (expected 16, got 11)
+seed=15 3x3 cells=6 DIFF facts: length differs (expected 9, got 4)
+seed=16 2x5 cells=7 DIFF facts: length differs (expected 10, got 3)
+seed=17 3x4 cells=10 DIFF facts: length differs (expected 12, got 4)
+seed=18 5x4 cells=12 DIFF facts: length differs (expected 20, got 14)
+seed=19 2x3 cells=3 AGREE
+seed=20 4x4 cells=9 DIFF facts: length differs (expected 16, got 7)
+seed=21 4x2 cells=5 DIFF facts: length differs (expected 8, got 5)
+seed=22 3x2 cells=6 DIFF facts: length differs (expected 6, got 3)
+seed=23 1x4 cells=2 DIFF facts: length differs (expected 4, got 1)
+seed=24 5x2 cells=7 DIFF facts: length differs (expected 10, got 5)
+seed=25 8x8 cells=38 DIFF facts: length differs (expected 64, got 34)
+seed=26 1x4 cells=4 DIFF facts: length differs (expected 4, got 1)
+seed=27 2x1 cells=2 DIFF facts: length differs (expected 2, got 1)
+seed=28 5x5 cells=17 DIFF facts: length differs (expected 25, got 22)
+seed=29 1x2 cells=2 DIFF facts: length differs (expected 2, got 1)
+seed=30 7x3 cells=13 DIFF facts: length differs (expected 21, got 16)
+seed=31 2x5 cells=8 DIFF facts: length differs (expected 10, got 1)
+seed=32 5x2 cells=6 DIFF facts: length differs (expected 10, got 7)
+seed=33 1x4 cells=4 DIFF facts: length differs (expected 4, got 0)
+seed=34 6x1 cells=5 DIFF facts: length differs (expected 6, got 5)
+seed=35 3x5 cells=7 DIFF facts: length differs (expected 15, got 9)
+seed=36 7x2 cells=10 DIFF facts: length differs (expected 14, got 11)
+seed=37 6x1 cells=5 DIFF facts: length differs (expected 6, got 3)
+seed=38 7x1 cells=6 DIFF facts: length differs (expected 7, got 5)
+seed=39 4x4 cells=11 DIFF facts: length differs (expected 16, got 14)
+seed=40 6x1 cells=4 DIFF facts: length differs (expected 6, got 5)
+seed=41 5x4 cells=13 DIFF facts: length differs (expected 20, got 7)
+seed=42 4x6 cells=17 DIFF facts: length differs (expected 24, got 11)
+seed=43 4x4 cells=10 DIFF facts: length differs (expected 16, got 6)
+seed=44 3x1 cells=3 DIFF facts: length differs (expected 3, got 1)
+seed=45 5x5 cells=17 DIFF facts: length differs (expected 25, got 20)
+seed=46 5x3 cells=8 AGREE
+seed=47 2x3 cells=6 DIFF facts: length differs (expected 6, got 2)
+seed=48 5x2 cells=7 DIFF facts: length differs (expected 10, got 6)
+seed=49 5x5 cells=16 DIFF facts: length differs (expected 25, got 17)
+seed=50 8x6 cells=29 DIFF facts: length differs (expected 48, got 33)
+seed=51 1x3 cells=3 DIFF facts: length differs (expected 3, got 2)
+seed=52 1x3 cells=3 DIFF facts: length differs (expected 3, got 2)
+seed=53 5x1 cells=4 DIFF facts: length differs (expected 5, got 2)
+seed=54 4x2 cells=7 DIFF facts: length differs (expected 8, got 7)
+seed=55 6x5 cells=14 DIFF facts: length differs (expected 30, got 18)
+seed=56 3x5 cells=11 DIFF facts: length differs (expected 15, got 13)
+seed=57 4x1 cells=4 DIFF facts: length differs (expected 4, got 1)
+seed=58 1x5 cells=3 DIFF facts: length differs (expected 5, got 0)
+seed=59 5x2 cells=8 DIFF facts: length differs (expected 10, got 5)
+seed=60 1x2 cells=2 DIFF facts: length differs (expected 2, got 1)
+seed=61 5x6 cells=21 DIFF facts: length differs (expected 30, got 14)
+seed=62 3x2 cells=3 DIFF facts: length differs (expected 6, got 1)
+seed=63 1x2 cells=2 AGREE
+seed=64 5x4 cells=17 DIFF facts: length differs (expected 20, got 10)
+seed=65 2x4 cells=3 DIFF facts: length differs (expected 8, got 6)
+seed=66 1x2 cells=2 DIFF facts: length differs (expected 2, got 1)
+seed=67 5x4 cells=9 DIFF facts: length differs (expected 20, got 3)
+seed=68 3x1 cells=3 DIFF facts: length differs (expected 3, got 2)
+seed=69 4x5 cells=12 DIFF facts: length differs (expected 20, got 9)
+seed=70 4x2 cells=8 DIFF facts: length differs (expected 8, got 4)
+seed=71 3x4 cells=9 DIFF facts: length differs (expected 12, got 4)
+seed=72 1x2 cells=1 DIFF facts: length differs (expected 2, got 0)
+seed=73 7x6 cells=26 DIFF facts: length differs (expected 42, got 13)
+seed=74 4x6 cells=15 DIFF facts: length differs (expected 24, got 18)
+seed=75 7x6 cells=22 DIFF facts: length differs (expected 42, got 33)
+seed=76 5x5 cells=14 DIFF facts: length differs (expected 25, got 17)
+seed=77 2x5 cells=9 DIFF facts: length differs (expected 10, got 5)
+seed=78 3x3 cells=8 DIFF facts: length differs (expected 9, got 6)
+seed=79 5x5 cells=11 DIFF facts: length differs (expected 25, got 21)
+seed=80 6x5 cells=15 DIFF facts: length differs (expected 30, got 19)
+seed=81 4x3 cells=7 DIFF facts: length differs (expected 12, got 4)
+seed=82 7x4 cells=16 DIFF facts: length differs (expected 28, got 19)
+seed=83 4x4 cells=13 DIFF facts: length differs (expected 16, got 4)
+seed=84 4x6 cells=15 DIFF facts: length differs (expected 24, got 14)
+seed=85 3x5 cells=14 DIFF facts: length differs (expected 15, got 7)
+seed=86 5x5 cells=13 DIFF facts: length differs (expected 25, got 24)
+seed=87 3x3 cells=9 DIFF facts: length differs (expected 9, got 8)
+seed=88 6x3 cells=8 DIFF facts: length differs (expected 18, got 11)
+seed=89 3x6 cells=11 DIFF facts: length differs (expected 18, got 14)
+seed=90 2x2 cells=4 AGREE
+seed=91 2x6 cells=12 DIFF facts: length differs (expected 12, got 6)
+seed=92 5x6 cells=15 DIFF facts: length differs (expected 30, got 21)
+seed=93 3x4 cells=10 DIFF facts: length differs (expected 12, got 9)
+seed=94 1x6 cells=3 AGREE
+seed=95 5x2 cells=7 DIFF facts: length differs (expected 10, got 7)
+seed=96 1x2 cells=2 DIFF facts: length differs (expected 2, got 1)
+seed=97 3x6 cells=13 DIFF facts: length differs (expected 18, got 11)
+seed=98 2x3 cells=5 DIFF facts: length differs (expected 6, got 3)
+seed=99 5x4 cells=15 DIFF facts: length differs (expected 20, got 17)
+seed=100 7x6 cells=28 DIFF facts: length differs (expected 42, got 26)
+seed=101 4x4 cells=9 DIFF facts: length differs (expected 16, got 15)
+seed=102 5x5 cells=19 DIFF facts: length differs (expected 25, got 15)
+seed=103 5x1 cells=4 DIFF facts: length differs (expected 5, got 4)
+seed=104 7x5 cells=19 DIFF facts: length differs (expected 35, got 17)
+seed=105 2x6 cells=5 DIFF facts: length differs (expected 12, got 9)
+seed=106 4x1 cells=4 DIFF facts: length differs (expected 4, got 2)
+seed=107 4x5 cells=16 DIFF facts: length differs (expected 20, got 6)
+seed=108 3x5 cells=11 DIFF facts: length differs (expected 15, got 7)
+seed=109 7x4 cells=15 DIFF facts: length differs (expected 28, got 22)
+seed=110 4x5 cells=6 DIFF facts: length differs (expected 20, got 17)
+seed=111 7x1 cells=5 DIFF facts: length differs (expected 7, got 2)
+seed=112 5x4 cells=11 DIFF facts: length differs (expected 20, got 13)
+seed=113 6x3 cells=11 DIFF facts: length differs (expected 18, got 11)
+seed=114 4x5 cells=11 DIFF facts: length differs (expected 20, got 12)
+seed=115 5x6 cells=18 DIFF facts: length differs (expected 30, got 21)
+seed=116 7x3 cells=9 DIFF facts: length differs (expected 21, got 13)
+seed=117 4x6 cells=13 DIFF facts: length differs (expected 24, got 20)
+seed=118 2x1 cells=1 AGREE
+seed=119 6x2 cells=12 DIFF facts: length differs (expected 12, got 7)
+seed=120 3x3 cells=8 DIFF facts: length differs (expected 9, got 4)
+seed=121 5x5 cells=13 DIFF facts: length differs (expected 25, got 19)
+seed=122 5x5 cells=12 DIFF facts: length differs (expected 25, got 12)
+seed=123 3x3 cells=6 DIFF facts: length differs (expected 9, got 3)
+seed=124 4x3 cells=4 DIFF facts: length differs (expected 12, got 5)
+seed=125 9x8 cells=45 DIFF facts: length differs (expected 72, got 41)
+seed=126 1x2 cells=2 DIFF facts: length differs (expected 2, got 0)
+seed=127 5x6 cells=17 DIFF facts: length differs (expected 30, got 24)
+seed=128 2x5 cells=6 DIFF facts: length differs (expected 10, got 5)
+seed=129 2x4 cells=5 DIFF facts: length differs (expected 8, got 7)
+seed=130 5x5 cells=9 AGREE
+seed=131 5x1 cells=4 AGREE
+seed=132 4x5 cells=12 DIFF facts: length differs (expected 20, got 13)
+seed=133 6x5 cells=20 DIFF facts: length differs (expected 30, got 16)
+seed=134 5x5 cells=14 DIFF facts: length differs (expected 25, got 18)
+seed=135 4x5 cells=14 DIFF facts: length differs (expected 20, got 18)
+seed=136 5x4 cells=14 DIFF facts: length differs (expected 20, got 17)
+seed=137 4x1 cells=4 DIFF facts: length differs (expected 4, got 2)
+seed=138 4x5 cells=16 DIFF facts: length differs (expected 20, got 15)
+seed=139 3x5 cells=13 DIFF facts: length differs (expected 15, got 11)
+seed=140 1x2 cells=2 AGREE
+seed=141 3x2 cells=3 DIFF facts: length differs (expected 6, got 2)
+seed=142 5x3 cells=5 DIFF facts: length differs (expected 15, got 10)
+seed=143 5x3 cells=15 DIFF facts: length differs (expected 15, got 8)
+seed=144 3x3 cells=7 AGREE
+seed=145 4x5 cells=15 DIFF facts: length differs (expected 20, got 11)
+seed=146 1x1 cells=1 AGREE
+seed=147 2x2 cells=3 DIFF facts: length differs (expected 4, got 2)
+seed=148 1x4 cells=2 DIFF facts: length differs (expected 4, got 1)
+seed=149 4x5 cells=12 DIFF facts: length differs (expected 20, got 15)
+seed=150 9x7 cells=38 DIFF facts: length differs (expected 63, got 44)
+seed=151 1x2 cells=2 AGREE
+seed=152 2x3 cells=6 DIFF facts: length differs (expected 6, got 4)
+seed=153 5x2 cells=7 DIFF facts: length differs (expected 10, got 6)
+seed=154 6x2 cells=9 DIFF facts: length differs (expected 12, got 9)
+seed=155 3x6 cells=12 DIFF facts: length differs (expected 18, got 8)
+seed=156 5x6 cells=16 DIFF facts: length differs (expected 30, got 22)
+seed=157 5x5 cells=14 DIFF facts: length differs (expected 25, got 22)
+seed=158 1x6 cells=5 DIFF facts: length differs (expected 6, got 4)
+seed=159 1x1 cells=1 AGREE
+seed=160 3x6 cells=17 DIFF facts: length differs (expected 18, got 5)
+seed=161 2x5 cells=8 DIFF facts: length differs (expected 10, got 9)
+seed=162 7x2 cells=11 DIFF facts: length differs (expected 14, got 8)
+seed=163 5x3 cells=13 DIFF facts: length differs (expected 15, got 11)
+seed=164 5x2 cells=6 DIFF facts: length differs (expected 10, got 5)
+seed=165 3x1 cells=2 DIFF facts: length differs (expected 3, got 2)
+seed=166 3x3 cells=7 DIFF facts: length differs (expected 9, got 3)
+seed=167 7x2 cells=13 DIFF facts: length differs (expected 14, got 8)
+seed=168 4x4 cells=9 DIFF facts: length differs (expected 16, got 15)
+seed=169 1x4 cells=3 DIFF facts: length differs (expected 4, got 1)
+seed=170 5x1 cells=3 DIFF facts: length differs (expected 5, got 4)
+seed=171 4x1 cells=2 DIFF facts: length differs (expected 4, got 3)
+seed=172 1x6 cells=6 AGREE
+seed=173 5x2 cells=6 DIFF facts: length differs (expected 10, got 9)
+seed=174 5x5 cells=12 DIFF facts: length differs (expected 25, got 19)
+seed=175 8x8 cells=37 DIFF facts: length differs (expected 64, got 41)
+seed=176 4x1 cells=4 AGREE
+seed=177 2x4 cells=6 DIFF facts: length differs (expected 8, got 4)
+seed=178 4x6 cells=16 DIFF facts: length differs (expected 24, got 11)
+seed=179 6x4 cells=14 DIFF facts: length differs (expected 24, got 19)
+seed=180 5x4 cells=12 DIFF facts: length differs (expected 20, got 6)
+seed=181 4x6 cells=17 DIFF facts: length differs (expected 24, got 13)
+seed=182 3x5 cells=7 DIFF facts: length differs (expected 15, got 4)
+seed=183 3x4 cells=4 DIFF facts: length differs (expected 12, got 11)
+seed=184 5x6 cells=18 DIFF facts: length differs (expected 30, got 22)
+seed=185 3x5 cells=12 DIFF facts: length differs (expected 15, got 7)
+seed=186 4x6 cells=19 DIFF facts: length differs (expected 24, got 13)
+seed=187 4x5 cells=15 DIFF facts: length differs (expected 20, got 9)
+seed=188 4x5 cells=15 DIFF facts: length differs (expected 20, got 16)
+seed=189 2x6 cells=5 AGREE
+seed=190 4x4 cells=7 DIFF facts: length differs (expected 16, got 12)
+seed=191 4x4 cells=10 DIFF facts: length differs (expected 16, got 13)
+seed=192 3x4 cells=10 DIFF facts: length differs (expected 12, got 10)
+seed=193 3x4 cells=8 DIFF facts: length differs (expected 12, got 3)
+seed=194 4x5 cells=13 DIFF facts: length differs (expected 20, got 12)
+seed=195 6x2 cells=5 DIFF facts: length differs (expected 12, got 3)
+seed=196 5x5 cells=17 DIFF facts: length differs (expected 25, got 14)
+seed=197 2x6 cells=5 DIFF facts: length differs (expected 12, got 11)
+seed=198 5x1 cells=4 DIFF facts: length differs (expected 5, got 2)
+seed=199 5x4 cells=9 DIFF facts: length differs (expected 20, got 14)
+fixed=cap128 AGREE
+fixed=cap127-control AGREE
+
+## 5. 全断言真实日志与退出码（四条验收命令）
+- npm run typecheck: exit 0. (tsc --noEmit; no diagnostics.)
+- npm run test:core: exit 1. Vitest 4.1.12, 9 test files, 714 tests:
+  205 failed | 509 passed. Per file:
+    tests/core/grid.test.ts     67 tests,  0 failed
+    tests/core/flatten.test.ts  19 tests,  0 failed
+    tests/core/witness.test.ts  17 tests,  0 failed
+    tests/core/compare.test.ts  29 tests,  0 failed
+    tests/core/report.test.ts   17 tests,  0 failed
+    tests/core/sha256.test.ts    8 tests,  0 failed
+    tests/core/worker.test.ts   13 tests,  0 failed
+    tests/core/golden.test.ts  339 tests, 24 failed (all `facts`)
+    tests/property/crosscheck.test.ts 205 tests, 181 failed (all `facts`)
+  (Full outputs saved at /tmp/t011-testcore.txt and /tmp/t011-test.txt on this
+  VM; the per-seed table in §4 and the failing-Golden list in §8 are taken
+  from those runs.)
+- npm run oracle: exit 0. "48/48 passed (0 failed)" — PASS G01..G48 in order,
+  no NOTE about unexercised entries (all 48 fixtures present). Full output in
+  /tmp/t011-oracle-full.txt and /tmp/t011-oracle2.txt.
+- npm test: exit 1. Same 9 files / 714 tests as test:core (205 failed |
+  509 passed); no e2e suite exists yet (T012 scope), so `npm test` and
+  `npm run test:core` cover the same files in this card.
+- Test totals, split as the card asks: core (tests/core) 170 taken-over +
+  339 golden = 509 tests, of which 485 pass / 24 fail; property
+  (tests/property) 205 tests, of which 24 pass / 181 fail. Combined 714:
+  509 pass / 205 fail. Every one of the 205 failures is the single `facts`
+  field (§8); the taken-over 170 tests pass unchanged (170/170, as at T010).
+
+## 6. 测试接管改名映射（7 个临时测试文件，全部断言保留，只去 TEMPORARY 头注）
+- tests/core/t003-temp.test.ts      -> tests/core/grid.test.ts     (67 tests)
+- tests/core/t004-temp.test.ts      -> tests/core/flatten.test.ts  (19 tests)
+- tests/core/t005-temp.test.ts      -> tests/core/witness.test.ts  (17 tests)
+- tests/core/t007-temp.test.ts      -> tests/core/compare.test.ts  (29 tests)
+- tests/core/t008-temp.test.ts      -> tests/core/report.test.ts   (17 tests)
+- tests/core/t009fix01-temp.test.ts -> tests/core/sha256.test.ts   (8 tests)
+- tests/core/t010-temp.test.ts      -> tests/core/worker.test.ts   (13 tests)
+No TEMPORARY header remains anywhere under tests/core/ (grep verified).
+New files this card: tests/core/golden.test.ts (339 tests),
+tests/property/generator.ts, tests/property/compare.ts,
+tests/property/oracle_driver.py, tests/property/crosscheck.test.ts (205 tests).
+No file outside the card's output list was modified: src/core/*, oracle/*,
+src/ui/*, package*, docs/, bundle/, S0_REPORT.md, COORDINATOR_LOG.md are
+untouched (git status shows only the card's own new/renamed files).
+
+## 7. 裁决小节
+- O6 口径（alternativeHtml 结构比对）: slotOwner/cells/F/见证状态/错误码逐字
+  节一致；alternativeHtml 只做结构比对（双方 B HTML 各自重解析后比
+  cells/slotOwner/F(B)）。实测：Golden 48 个认证案例与 property 200 种子
+  中，TS 与 Oracle 的 alternativeHtml 原始字符串差异为 0 处
+  ("[T011-O6] ... 0 case(s): none" in the golden run;
+  "O6 raw-string diffs: 0 (none)" in the property run) — 两边的序列化器
+  在实测中逐字节一致，O6 在本卡不是分歧来源。
+- O1 与 128 格上限：见 §8 item 2 / item 3。
+- 接管临时测试的改名映射：见 §6（7 个文件，170 个断言全部保留且通过）。
+- 第一不一致：见 §8 item 1（G02 / seed 0，`facts` 字段覆盖定义分歧）。
+  除该字段外无其他不一致：200 种子中 mismatch-by-field 只有 {"facts":181}，
+  48 Golden 中除 facts 外的 315 个断言全部通过。
+
+## 8. 第一不一致与未解决问题（FAIL 的全部依据；无一处略过/标预期失败）
+### FIRST INCONSISTENCY #1 — `facts` (SlotFact) coverage definition (spec ambiguity)
+- Minimal Golden input (G02, strategy REPEAT_VALUE):
+  <table><thead><tr><th>名称</th><th>数量</th></tr></thead><tbody><tr><td>苹果</td><td>3</td></tr></tbody></table>
+  TS value: buildSlotFacts / analyze().facts has 2 entries (TD-occupied slots
+  only: c02 苹果, c03 3).
+  Oracle value: golden_expected.json G02 expected.facts has 4 entries (one per
+  slot: c00 名称, c01 数量, c02 苹果, c03 3 — including the two thead TH slots).
+  First differing field: facts: length differs (expected 4, got 2).
+  Vitest: Golden 'G02' > facts match the hand computation — FAIL.
+- Minimal property input (seed 0, 7x6, 19 DOM cells; full HTML in the
+  generator — reproduce with generateTable(0); first rows:
+  <table><thead><tr><th colspan="2">c\d</th><th colspan="3">A &amp; B</th>
+  <th scope="col">A &amp; B</th></tr> ... </thead><tbody> ... </tbody></table>):
+  TS value: 24 facts (TD-occupied slots only).
+  Oracle value: 42 facts (one per slot, 7 rows x 6 cols, including TH slots).
+  First differing field: facts: length differs (expected 42, got 24).
+  Vitest: seed 0 — FAIL. (Lowest failing seed; 181 of 200 seeds fail on this
+  same field, and the 19 agreeing seeds are exactly the all-TD tables with no
+  TH cell at all — where the two definitions coincide.)
+- Scope of the divergence: 24 of 48 Goldens fail ONLY on `facts`
+  (G02, G03, G04, G06, G07, G08, G09, G10, G12, G14, G16, G17, G19, G20, G21,
+  G22, G24, G25, G26, G29, G30, G31, G39, G40 — every Golden containing at
+  least one TH cell; the 16 all-TD success Goldens + 8 error Goldens pass
+  fully). 181 of 200 property seeds fail ONLY on `facts`. All other compared
+  fields — rows, cols, slotOwner, cells, handover, f_origin, f_repeat,
+  witness status/source_cell_id/split_cost/header_association_changed/
+  collision_kind, a/b/markdown SHA-256, F(B), B cells, B slotOwner, error
+  codes — agree on all 48 Goldens and all 200 seeds.
+- Root cause (read from the code, not guessed): TS src/core/records.ts
+  buildSlotFacts skips non-TD cells ("只对 role 为 TD 的单元格占用的槽位出
+  记录；th 槽位不出事实行（th 是标题本身，不是数据值）"); Oracle
+  oracle/reference.py build_facts appends one fact per slot for every slot
+  regardless of role, while its handover_lines filters to TD afterwards
+  ("One line per td-occupied slot (spec 5.4)"). So the two sides agree on
+  the handover text (TD-only, 40/40 Golden handover tests pass) and disagree
+  only on what the `facts` array itself contains.
+- Classification: SPEC AMBIGUITY (plan §9.3), not a proven bug on either side
+  yet. The frozen spec does not pin SlotFact coverage: §5.4 says the handover
+  text is "对每个 td 占用的槽位", and §2.1 G04 says "逐数据格输出行/列显式
+  表头路径" — both point to TD/data-cell-only records, which is the TS
+  reading. No frozen sentence says `facts` must cover TH-occupied slots.
+- Recommended fix (for the coordinator's new card, NOT done here — oracle/*
+  and src/core/* are outside this card's write scope): rule in favour of
+  TD-only (spec §5.4 + G04), narrow Oracle build_facts to TD-occupied slots
+  (the same filter handover_lines already applies), and drop the TH-slot
+  entries from the hand-computed `facts` arrays in golden_expected.json
+  (handover lines are unchanged by this — they are already TD-only).
+  Alternative ruling (widen TS buildSlotFacts to all slots) would instead
+  change analyze().facts and the UI's per-slot display; either way the ruling
+  must be written down first, then one side fixed, then this card re-run
+  (T011 tests are kept failing until then — they are the regression net).
+- What was NOT done: no skip / expected-fail / todo marker was added; no
+  expectation was back-filled from TS output (golden expectations are still
+  exactly the T006 hand values); no core/oracle file was modified to make the
+  tests pass; the `facts` comparison was NOT dropped from either suite.
+
+### OPEN ISSUE #2 — O1: unknown attributes (confirmed divergence, outside the 200-seed subset)
+Probe (one-off /tmp scripts, both sides, same inputs; NOT part of the 200):
+- <td data-x="1">: TS accepts (NO_WITNESS_FOUND, 2 facts); Oracle throws
+  INVALID_RAGGED_GRID ("attribute data-x on <td> is outside the subset").
+- <table class="t">: TS accepts; Oracle throws INVALID_RAGGED_GRID.
+- <td style="color:red">: TS accepts; Oracle throws INVALID_RAGGED_GRID.
+This is the known T006 O1 open issue (oracle's strict-subset reading; no
+Golden covers it). It was NOT mixed into the 200-seed generator (the card
+specifies "受限合法" tables inside the frozen subset, and unknown attributes
+are outside the agreed subset); it is recorded here as a second confirmed
+divergence needing the same kind of ruling + fix card as item 1 (either TS
+parse rejects unknown attributes, or the Oracle relaxes — spec §3.1 lists
+only the allowed tags, not the allowed attributes, so this too is a spec
+gap). Minimal input: <table><tbody><tr><td data-x="1">A</td><td>B</td></tr></tbody></table>.
+
+### CLOSED IN THIS CARD #3 — 128-cell cap interaction (J-T005-6): TS and Oracle AGREE
+Fixed cases in tests/property/crosscheck.test.ts (same comparator as the seeds):
+- cap128 (32 rows x 5 cols, 128 DOM cells, one colspan=2 per row; any split
+  would make B 129 cells): both NO_WITNESS_FOUND — AGREE. Oracle reason:
+  "all candidates failed: c00: B would have 129 DOM cells, over the 128 cap
+  (J-T005-6); ..." (all 32 candidates). TS likewise returns NO_WITNESS_FOUND.
+- cap127-control (127 DOM cells, one rowspan=2; B = 128, legal): both
+  CERTIFIED_COLLISION, source c00 — AGREE.
+T006 §9 asked T011's property tests to cover this; covered and agreeing.
+
+### FIXED IN THIS CARD #4 — generator span-rectangle bug (test-code bug, fixed before final runs)
+First version of tests/property/generator.ts chose a span (h, w) checking only
+that the origin slot was free; an earlier rowspan could already occupy slots
+inside the chosen rectangle, producing overlapping INVALID_GRID_OVERLAP tables
+(seed 0 was such a case — both sides agreed on the error code, so the seed
+"passed" without testing anything). Fixed by shrinking w, then h, until the
+whole rectangle is free (1x1 always works). After the fix: valid-tables=200,
+error-agreements=0, and the suite was re-run from scratch (numbers in §1/§4
+are from the post-fix run, /tmp/t011-property-run2.txt).

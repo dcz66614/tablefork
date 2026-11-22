@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G40",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>科目</th><th>分数</th></tr></thead><tbody><tr><th scope=\"row\" rowspan=\"2\">数学 &amp; 物理</th><td>90</td></tr><tr><td>85</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G40"
+}

@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G33",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td>a|b</td><td>c\\d</td></tr><tr><td>e\\|f</td><td>g</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G33"
+}

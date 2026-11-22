@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G34",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td>中文测试</td><td>😀笑</td></tr><tr><td>全角ＡＢ</td><td>123</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G34"
+}

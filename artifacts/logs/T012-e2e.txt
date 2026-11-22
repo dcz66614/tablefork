@@ -1,0 +1,358 @@
+# P029-T012 真实 UI E2E、安全和性能见证日志
+# Generated: 2026-11-21 ~04:05 UTC — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 7cfcd0d (P029-T011-FIX-01 merged; T011对照全绿).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T012 真实 UI E2E、安全和性能见证 — tests/e2e/*, screenshots, this log,
+#   T012-performance.json, task_handoffs/P029-T012.json
+# Environment: Node v24.22.1, npm 10.9.4, TypeScript 5.9.3, React 19.3.1, Vite 7.3.8,
+#   Vitest 4.1.12, Playwright 1.65.1, Chromium 159.0.8154.6, Linux x86_64,
+#   4 CPUs (本 cell 共享 1.5 vCPU), 7934 MiB 内存. Python 3.12.3 (本卡未用).
+# No external model API called; no Qoder; no password/key files touched.
+# git status at start: clean except untracked S0_REPORT.md + COORDINATOR_LOG.md
+#   (coordinator files, untouched by this card). git diff at end: only
+#   playwright.config.ts modified (see §8 J-T012-1/J-T012-3); src/core/*,
+#   oracle/*, docs/, fixtures/golden/*, oracle/golden_expected.json untouched.
+# WINDOWS_NOT_TESTED — 未在 Windows 运行.
+
+## 0. 总体结论（先说坏消息）
+- 功能 E2E：21 条中 20 条通过；唯一失败是性能断言（见 §6）。
+- 性能：p95 <= 500ms 目标在两次全套并行验收运行中均未达标——527.4ms（run A）
+  与 649.2ms（run B，最终验收轮）。独立（无并行负载）UI 运行两次均达标——
+  263.2ms 与 282.8ms；Node 内核对照 p95 109.7ms。按 IMPLEMENTATION_PLAN.md
+  §11，性能未达标但 32x12 可稳定使用属于 P2 候选，不是功能阻断；但本卡
+  如实记 FAIL：`npm run test:e2e` 退出码为 1，T012-performance.json verdict
+  为 FAIL。未改表、未降采样、未虚构数字；五组原始数据全部保留（见 §6）。
+- 其余验收命令：npm run build exit 0；npm run test exit 0（719/719）；
+  npm run typecheck exit 0。
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run build (tsc --noEmit && vite build): exit 0, wall 6.5s (vite built in 1.71s)
+    dist/index.html 0.41 kB, index-*.css 5.66 kB, index-*.js 269.83 kB (gzip 86.75 kB);
+    48 modules transformed. (Run again inside the test:e2e webServer on every run.)
+- npm run test:e2e — full-suite run A (2026-11-21 ~03:59 UTC): exit 1, wall 40.9s
+    20 passed, 1 failed (performance p95 527.4ms > 500ms). 21 tests total.
+- npm run test:e2e — full-suite run B, FINAL acceptance run (2026-11-21 ~04:03 UTC):
+    exit 1, wall 41.1s. 20 passed, 1 failed (performance p95 649.2ms > 500ms).
+    失败截图与 trace 已保留（见 §5 末尾与 §6）。
+- npm run test:e2e — perf spec alone, standalone run 1 (~03:58 UTC): exit 0, wall 19.6s,
+    1 passed (p95 263.2ms). Standalone run 2 (~04:00 UTC): exit 0, wall 19.8s,
+    1 passed (p95 282.8ms).
+- npm run test (vitest run): exit 0, wall 5.0s (final run 04:03 UTC).
+    Test Files: 10 passed (10). Tests: 719 passed (719), 0 failed.
+    注意：04:01 UTC 曾有一次 exit 1——Vitest 默认 include 误跑了新建的两个
+    .spec.ts Playwright 文件（2 failed suites，719 个单测本身全过）；见 §8
+    J-T012-3，改名 *.e2e.ts 后恢复 719/719 exit 0。
+- npm run typecheck (tsc --noEmit): exit 0, wall ~4.0s (final run 04:03 UTC)。
+- Node CLI 对照（/tmp/t012-perf-cli.mts，tsx 进程内 analyze() 循环 30 次，
+  同一张表、同一内核，warm-up 不计）: exit 0, p95 109.7ms（见 §6）。
+
+## 2. E2E tests — 21 条，全部真实跑在 Chromium 159.0.8154.6 里
+# 文件：tests/e2e/tablefork.e2e.ts（20 条）+ tests/e2e/performance.e2e.ts（1 条）。
+# 全部跑 vite preview 的生产构建（playwright.config.ts webServer 先 npm run build
+# 再 preview，见 §8 J-T012-1）。方法复用 T009 的 31 项浏览器检查口径
+# （artifacts/logs/T009-ui.txt §6）：同一中文按钮文、.tf-status 状态栏、
+# .tf-grid 格子 aria-label。测试名与行为一一对应。
+# Run A 与 run B 的 20 条功能测试全部通过；性能测试在两次全套运行中失败、
+# 两次独立运行中通过（见 §6）。
+
+ 1. preset TFK-A ORIGIN_EMPTY shows CERTIFIED_COLLISION — PASS（run A + run B）
+    断言：CERTIFIED_COLLISION、HEADER_ASSOCIATION_CHANGED、断言 1（A ≠ B）、
+    断言 2（F(A) = F(B)）、合并 1×2 徽标、已拆分徽标、NOT_SUPPLIED。
+ 2. preset TFK-A REPEAT_VALUE shows CERTIFIED_COLLISION — PASS
+    策略 radio 切 REPEAT_VALUE 后分析：CERTIFIED_COLLISION +
+    HEADER_ASSOCIATION_CHANGED；Markdown 仍含 2026预算。
+ 3. preset TFK-B ORIGIN_EMPTY shows CERTIFIED_COLLISION + HEADER_ASSOCIATION_CHANGED — PASS
+ 4. preset TFK-B REPEAT_VALUE shows STRUCTURAL_COLLISION — PASS
+    （与 T009 一致：TFK-B 在 REPEAT_VALUE 下为 STRUCTURAL_COLLISION 而非
+    HEADER_ASSOCIATION_CHANGED。）
+ 5. preset TFK-C shows NO_WITNESS_FOUND and never claims safety — PASS
+    断言：NO_WITNESS_FOUND、“不表示保真”、双表区“无 B 表”。
+ 6. preset TFK-D shows UNSUPPORTED + UNSUPPORTED_HEADER_SEMANTICS — PASS
+    断言：UNSUPPORTED、UNSUPPORTED_HEADER_SEMANTICS、“不回退为猜测”。
+ 7. strategy switch clears the previous result until re-analyzed — PASS
+    TFK-A 分析出 CERTIFIED 后切策略：状态栏 CERTIFIED 消失、双表区消失；
+    重新分析后 CERTIFIED 恢复。
+ 8. input edit: custom merged table analyzes to CERTIFIED_COLLISION — PASS
+    手填 colspan=2 自定义表分析出 CERTIFIED；改值 120→121 后旧结果清除，
+    再分析仍为 CERTIFIED。
+ 9. input edit: non-table text is INVALID_INPUT, not a guessed result — PASS
+    填 "hello, this is not a table"：INVALID_INPUT + INVALID_RAGGED_GRID。
+10. mismatch: EXACT_MATCH via fill, then MISMATCH with first-diff byte offset — PASS
+    “用 F(A) 填入”后分析出 EXACT_MATCH；把 M 末值 120 改 81 后再分析：
+    MISMATCH + “首个不同 UTF-8 字节下标”+“只对 F(A) 生效”。
+11. copy handoff: clipboard receives the slot-fact text — PASS
+    （独立 context，授予 clipboard-read/write 权限。）点“复制交接文本”后
+    显示“已复制交接文本”；剪贴板实测内容含 “[R2C1 source=c05]”、
+    “行标题: ?”、“列标题: 2026预算 > 收入”、“数值: 120”。
+12. export JSON: download is a tablefork.report/v1 CERTIFIED_COLLISION report — PASS
+    下载文件名为 tablefork-report-TFK-A.json；解析后 schema =
+    tablefork.report/v1、witness = CERTIFIED_COLLISION、compare =
+    NOT_SUPPLIED、proof.sourceCellId = c01；1.2s 后 DOM 中无 a[download]、
+    无 blob: 链接（锚点已移除，见 §8 J-T012-7）。
+13. cancel/race: newest analysis wins; cancelled job never overwrites new input — PASS（功能部分）
+    竞态：TFK-A 分析刚发起就切 TFK-C 再分析，最终为 NO_WITNESS_FOUND，
+    无 CERTIFIED 残留——jobId/版本号守卫实证。
+    取消探测：见 §7（3 次均未观测到“取消”按钮；事后状态稳定，随后一次
+    TFK-A 全新分析正常出 CERTIFIED）。
+14. clear memory: inputs, Markdown, result and handoff are gone from DOM and memory — PASS
+    TFK-A 分析后点“清空内存”：两文本区为空、无 CERTIFIED、双表区消失、
+    隐私声明重现、无逐格交接稿/证据 JSON <pre>、无 blob: 链接、
+    localStorage.length = 0、indexedDB.databases() = []。
+15. offline: all remote requests aborted, TFK-A still analyzes with zero remote requests — PASS
+    Playwright route 拦截全部非本地请求（abort）：TFK-A 仍出
+    CERTIFIED_COLLISION + 合并 1×2；remoteRequests = []；全部请求均为
+    http://127.0.0.1:4173/（共 >0 条，含页面与 JS/CSS）。
+16. security: raw <script> in a cell is rejected, never executed — PASS
+    输入 <td><script>alert(1)</script></td> 的表：INVALID_INPUT +
+    INVALID_RAGGED_GRID；dialogs = []、pageerror = []、远程请求 = []；
+    输入框仍以文本形式保留恶意串；文档中不存在含 alert(1) 的 <script> 节点。
+17. security: entity-escaped <img> + event attributes render as text, no img, no request — PASS
+    输入实体转义的 &lt;img src="https://example.com/x.png"&gt; 单元格与
+    onclick/onmouseover 属性的 td：分析出 CERTIFIED_COLLISION；恶意串以
+    文本形式显示在结果格里；页面 <img> 数量 = 0、<iframe> 数量 = 0；
+    example.com 请求 = []、dialogs = []、pageerror = []；渲染的格子上
+    onclick/onmouseover 属性均为 null。
+18. no storage writes: localStorage and IndexedDB stay empty across a full run — PASS
+    TFK-A 分析 + 点复制后：localStorage.length = 0、indexedDB.databases() = []。
+19. narrow 390px: TFK-A analyzes, stacked layout, no horizontal overflow — PASS
+    视口 390x844：CERTIFIED_COLLISION；documentElement.scrollWidth (390)
+    <= innerWidth (390)，无横向溢出。
+20. keyboard: Tab reaches a grid cell, Enter selects the slot and highlights Markdown — PASS
+    TFK-A 分析后从页顶 Tab（≤40 次）直至焦点落在 aria-label 为 R0C0…
+    的格子；按 Enter 后出现“已选中槽位 R0C0”、恰好 1 行 Markdown 高亮
+    （.tf-md-line.hl 数量 = 1）。
+21. performance: 32x12 table via UI analyze, 30 runs — FAIL（全套运行）/ PASS（独立运行）
+    见 §6：全套 run A p95 527.4ms、全套 run B p95 649.2ms（均 > 500ms，
+    断言失败）；独立 run 1 p95 263.2ms、run 2 p95 282.8ms（均达标）。
+
+## 3. Screenshots — 7 张，全部由本轮 Playwright 运行新鲜截取（真实 Chromium 渲染）
+# 尺寸与 SHA-256 均为 sha256sum / file 实测。映射：文件名 → 输入与策略。
+# 注意（见 §8 J-T012-5）：T012-A-origin-empty.png 与 T012-mobile390-A.png 的
+# SHA-256 与 T009 对应文件相同——因为 UI 自 T009 未变、同一 Chromium 确定性
+# 渲染同一 DOM；两文件由本轮两次 Playwright 运行各写一次、哈希始终一致，
+# 不是复制 T009 的文件；C/D 两张哈希与 T009 不同。
+- T012-A-origin-empty.png — 1280x1944 — 294060 bytes
+  sha256 148beea42227067b5035169dc388585931cc56f11b13ad75d248aa5fa9642fad
+  映射：TFK-A × ORIGIN_EMPTY，CERTIFIED_COLLISION，合并 vs 拆分双表。
+- T012-B-repeat-value.png — 1280x1847 — 263736 bytes
+  sha256 4fafed74132096f75ed619e0c5b59bb0617dcf0b5ecdc1bbd36fee93eaad7216
+  映射：TFK-B × REPEAT_VALUE，CERTIFIED_COLLISION + STRUCTURAL_COLLISION。
+  （已目视核对：TFK-B 预设选中、REPEAT_VALUE 选中、表 B 有“已拆分”徽标、
+  状态栏 CERTIFIED_COLLISION / STRUCTURAL_COLLISION、交接稿含
+  [R1C1 source=c03] 行标题: 部门X | 列标题: 数值 | 数值: a。）
+- T012-C-no-witness.png — 1280x1694 — 258709 bytes
+  sha256 bc1060ad267bc47817361c0c9d654f29ed7bc95dcd43e0f2927fd2a12706f42d
+  映射：TFK-C × ORIGIN_EMPTY（策略无关），NO_WITNESS_FOUND，“无 B 表”。
+- T012-D-unsupported.png — 1280x1109 — 161803 bytes
+  sha256 278922a7f65fa551e1903695bb8442b12383f1294497bf05476060bf7bef21d0
+  映射：TFK-D × ORIGIN_EMPTY（策略无关），UNSUPPORTED +
+  UNSUPPORTED_HEADER_SEMANTICS。
+- T012-mobile390-A.png — 390x3261 — 296565 bytes
+  sha256 49f5e83c271d7476cf45407022da8090242bb182fcb9a1189691c3c4d56d262e
+  映射：TFK-A × ORIGIN_EMPTY，视口 390x844 窄屏纵向折叠，无横向溢出。
+- T012-perf-fail.png — 1280x1944 — 145408 bytes
+  sha256 747d954263ec42b1acab110c8c494b80d082067d4362caae78c55896cfafd450
+  映射：全套 run A 失败瞬间（性能断言失败时 Playwright 自动截取），
+  与 run B 的失败截图逐字节相同（同一失败画面）。
+- T012-perf-fail-run2.png — 1280x1944 — 145408 bytes
+  sha256 747d954263ec42b1acab110c8c494b80d082067d4362caae78c55896cfafd450
+  映射：全套 run B（最终验收轮）失败瞬间，与 run A 的失败截图逐字节相同。
+
+## 4. 离线与安全检查结果（真实核对 DOM 状态，不是只看配置）
+- 离线（测试 15）：route 拦截全部非本地请求并 abort；TFK-A 正常分析出
+  CERTIFIED_COLLISION；远程请求列表为空；全部发出的请求均为本地
+  127.0.0.1:4173。PASS。
+- 安全样本 1（测试 16，原始 <script>）：输入含 <script>alert(1)</script>
+  的表被解析层以 INVALID_RAGGED_GRID 拒绝（<script> 不在限定子集内）；
+  无 dialog、无 pageerror、无远程请求；恶意串只以文本留在输入框；
+  文档中无含 alert(1) 的 <script> 节点。PASS。
+- 安全样本 2（测试 17，实体转义 <img> + 事件属性）：输入含
+  &lt;img src="https://example.com/x.png"&gt; 文本与 onclick /
+  onmouseover 属性的表正常分析出 CERTIFIED_COLLISION；恶意串以 React
+  文本节点显示；<img> = 0、<iframe> = 0、example.com 请求 = 0、无
+  dialog、无 pageerror；渲染格子上 onclick/onmouseover 属性均为 null。
+  事件属性被解析器忽略（parse.ts 只读 rowspan/colspan/scope/headers），
+  从未进入渲染 DOM。PASS。
+- 无存储写入（测试 14、18）：完整运行（含分析、复制）后
+  localStorage.length = 0 且 indexedDB.databases() = []；清空后同样为
+  0/[]。PASS。
+- 清空内存可见性（测试 14）：点“清空内存”后输入区、Markdown、结果区、
+  交接稿均为空或初始态；DOM 中无 blob: 链接；下载锚点已移除
+  （ExportPanel.tsx：click 后 a.remove()，1s 后 revokeObjectURL；测试在
+  1.2s 后断言 DOM 无 a[download]/blob: 链接——revoke 本身无法从外部直接
+  观测，记为代码级 + DOM 级双重证据，见 §8 J-T012-7）。PASS。
+
+## 5. 取消/竞态与失败 trace 保留
+- 竞态（测试 13）：TFK-A 分析刚发起就切 TFK-C 再分析，最终为
+  NO_WITNESS_FOUND 且无 CERTIFIED 残留——jobId/版本号守卫实证。PASS。
+- 取消探测（测试 13 后半，artifacts/logs/T012-cancel-probe.json）：
+  用最慢的真实输入（32x12 性能表）页内每 1ms 轮询“取消”按钮，3 次尝试
+  均 clicked=false（每次约 3.1–3.2s 超时）。原因见 §8 J-T012-2：
+  analyze() 主线程同步完成、React 批量合并 setState，ANALYZING 状态
+  （取消按钮）在真实浏览器时序里不出现。事后不变量成立：比较按钮回到
+  可用状态，随后一次 TFK-A 全新分析正常出 CERTIFIED_COLLISION。
+  “点取消丢弃在途任务”的 UI 路径因此未被真实点击过，记为未解决问题
+  （ISSUE-T012-2）。
+- 失败 trace（两次全套运行均因性能断言失败，Playwright 自动保留）：
+  run A：test-results/performance-performance-32x12-table-via-UI-analyze-30-runs/
+    trace.zip sha256 346ab34fcf094a31214546b9c5ac3bf670128cf93a564b547a77623a75d7c3d9
+    （7.8MB，未提交：*.zip 在 .gitignore 中；保留在磁盘，路径如上）
+    test-failed-1.png 已提交为 artifacts/screenshots/T012-perf-fail.png；
+    error-context.md 已提交为 artifacts/logs/T012-perf-fail-error-context.md
+    sha256 3a4d7b63aaba9c8919ac26e05ec0e2f513345c4fac47cd1e0bf5adb4e9920da1。
+  run B：test-results/performance.e2e.ts-perform-37764-able-via-UI-analyze-30-runs/
+    trace.zip sha256 d6b39fdb34cb1d51d196fd25277cad5ca8707cde7a30f35c2c9cb0a124ec0bfa
+    （未提交，同上）
+    test-failed-1.png 已提交为 artifacts/screenshots/T012-perf-fail-run2.png；
+    error-context.md 已提交为 artifacts/logs/T012-perf-fail-run2-error-context.md
+    sha256 78a63828d252abeaa18420f7a7f4a18cf09fa79bec529073f88ea58a40efad99。
+
+## 6. 性能（真实数字，禁止编造；五组原始值全部保留）
+# 性能表：tests/e2e/perf-table.ts PERF_TABLE_HTML（固定表，无随机）：
+#   32 行 x 12 列 = 384 格；DOM 单元格 89（<= 128）；合并格 78；单格 11；
+#   UTF-8 3047 字节；sha256
+#   2effed527a4e4c9d830cc7e4361bd5e5f1af007d6093ccf0c108f4438a9e5fdc。
+#   结构：thead 2 行（rowspan=2 的“组”+ colspan=6“上半年”+ colspan=5“下半年”，
+#   次行 11 个 th）；tbody 30 行 = 15 对（每对：th scope=row rowspan=2“部门N”+
+#   td colspan=6 + td colspan=5；次行 td colspan=6 + td colspan=5）。
+#   UI 与 CLI 均为 CERTIFIED_COLLISION（源格 c14，splitCost 1，
+#   headerAssociationChanged true），策略 ORIGIN_EMPTY。
+# 计时口径：UI 每次先点“清空内存”再重填同一张表，点击时旧结果已清除；
+#   t0/t1 为页内 performance.now()，夹在“点击比较按钮”与“状态栏出现
+#   CERTIFIED_COLLISION”之间；含 Playwright 点击派发 + React 渲染 +
+#   analyze() 计算 + expect 轮询开销，是 UI 端到端耗时，不是纯内核耗时。
+#   分位数 nearest-rank：p50 = 第 15 个顺序统计量，p95 = 第 29 个。
+# CLI 对照：Node 进程内 analyze() 循环 30 次（与 cli/analyze.ts 同一内核），
+#   warm-up 一次不计；t0/t1 = performance.now()。
+
+- UI 全套 run A（npm run test:e2e，~03:59 UTC，exit 1）：
+  原始值见 artifacts/logs/T012-perf-browser-full-suite.json（30 个）：
+  [412, 504.3, 412.1, 486.3, 484.8, 374.7, 428, 467.8, 497.2, 343.2,
+   380.7, 394.7, 409.1, 484.4, 442.6, 318.1, 443.4, 476.6, 400.6, 532.3,
+   527.4, 505.7, 371.8, 396.5, 394.1, 144.9, 203.2, 189.8, 231.7, 268.7]
+  min 144.9 / p50 409.1 / p95 527.4 / max 532.3。目标 p95 <= 500ms：FAIL。
+- UI 全套 run B（npm run test:e2e，最终验收轮，~04:03 UTC，exit 1）：
+  原始值见 artifacts/logs/T012-perf-browser.json（最新）与
+  artifacts/logs/T012-perf-browser-full-suite-run2.json（30 个）：
+  [672, 465.8, 649.2, 416.2, 399.8, 410, 390.2, 416.9, 472.2, 392.4,
+   498.6, 424.6, 411.4, 479.5, 567, 478.7, 334.6, 439.3, 457.9, 371.6,
+   396.1, 340.5, 275.2, 322.4, 407.7, 210.4, 166.5, 163.5, 175.2, 183.1]
+  min 163.5 / p50 407.7 / p95 649.2 / max 672。目标 p95 <= 500ms：FAIL。
+- UI 独立 run 1（仅跑性能 spec，~03:58 UTC，exit 0）：
+  原始值见 artifacts/logs/T012-perf-browser-standalone-run1.json（30 个，
+  该文件系转录：原文件被其后的全套运行覆盖，30 个值与统计量逐字转录自
+  当次命令输出，见该文件内 provenance 字段）：
+  [235, 218.8, 306.3, 263.2, 205.1, 183.2, 216.9, 205.7, 209.1, 186.2,
+   247.8, 172.2, 171.8, 191.2, 179, 168.6, 163.2, 199.2, 192.1, 183.7,
+   192, 228.3, 171.2, 178.4, 197.3, 198.5, 182.1, 166.9, 173.3, 205]
+  min 163.2 / p50 192 / p95 263.2 / max 306.3。目标：PASS。
+- UI 独立 run 2（仅跑性能 spec，~04:00 UTC，exit 0）：
+  原始值见 artifacts/logs/T012-perf-browser-standalone-run2.json（30 个）：
+  min 161.3 / p50 198 / p95 282.8 / max 297.7。目标：PASS。
+- Node CLI 对照（/tmp/t012-perf-cli.mts，tsx 进程内，~03:58 UTC，exit 0）：
+  原始值见 T012-performance.json 的 cli 字段（30 个）：
+  [113.4, 109.7, 94.6, 68.1, 69.1, 68.8, 80, 76.6, 67.2, 70.5,
+   70.6, 70, 70, 68.8, 66.7, 66.6, 65.1, 66, 70.3, 77.1,
+   77.5, 85.8, 68.4, 68, 70.5, 64.4, 67.7, 68.1, 67.9, 77.5]
+  min 64.4 / p50 69.1 / p95 109.7 / max 113.4。目标：PASS。
+- 汇总（T012-performance.json，sha256
+  cbb513fe81a9f365f061477e0536deefe5314906180a6585d294589e117f6508）：
+  全套 p95：527.4ms / 649.2ms——FAIL；独立 UI p95：263.2ms / 282.8ms——PASS；
+  内核 p95：109.7ms——PASS。总体 verdict：FAIL（以全套验收轮为准）。
+- 成因分析（非猜测，有两组内证）：两次全套运行的后 ~5 次耗时均回落到
+  独立运行区间（run A 第 26–30 次：144.9–268.7ms；run B 第 26–30 次：
+  163.5–210.4ms），恰好对应另一 worker 的 20 条功能测试跑完、只剩性能
+  测试独占 CPU 的时段；前 25 次（双 worker 并行）系统性偏高。本 cell
+  只有 1.5 共享 vCPU，两 worker 各一个 Chromium，争用直接抬高含
+  Playwright 轮询的端到端计时。内核本身两次独立测量均在 ~70–110ms。
+  结论：超标是并行负载下的测量条件问题叠加 UI 端到端开销，不是产品
+  在单用户正常使用下变慢；但目标是在验收命令（全套并行）下测的，如实
+  记 FAIL，不改口径、不把独立运行冒充为验收结果。
+
+## 7. 裁决小节（§7：未在规格中钉死的 e2e 细节）
+- J-T012-1（生产构建与 preview 绑定）：T001 的 playwright.config.ts 原
+  指 dev server（5173）；本卡要求跑生产构建，故 webServer 改为
+  `npm run build && npx vite preview --port 4173 --strictPort --host 127.0.0.1`，
+  baseURL 改为 http://127.0.0.1:4173。--host 127.0.0.1 是实测必需：本 VM
+  上 vite preview 默认只绑 [::1]:4173，127.0.0.1 连不上（curl 返回 000），
+  导致 webServer 首次启动 60s 超时；加 --host 后一次成功。另把
+  trace 改为 retain-on-failure、screenshot 改为 only-on-failure（失败时
+  保留截图与 trace，卡片要求；原 on-first-retry 在 retries=0 时永不触发）。
+- J-T012-2（取消按钮真实不可达）：src/core/report.ts 的 analyze() 是 async
+  签名、无真实 await，全程同步计算；App.tsx 的 runAnalysis 在 await 后才
+  setAnalyzing(false)，React 把 true→false 批量合并为一次渲染，ANALYZING
+  状态（“取消”按钮）在真实浏览器时序里不出现。3 次页内 1ms 轮询探测
+  （32x12 最慢输入）均未观测到按钮。jobId 守卫改由竞态测试实证（两次
+  连续分析取最新结果）。Worker 接线后（T010 的 Worker 已存在但 UI 未接，
+  是 T013 的活）取消才可能真实可达，届时应重测。
+- J-T012-3（Vitest 与 Playwright 文件后缀冲突）：Vitest 默认 include
+  为 **/*.{test,spec}.*，会把 tests/e2e/*.spec.ts 当单测跑，Playwright
+  的 test.setTimeout/beforeEach 在 Vitest 进程内抛错，导致 npm run test
+  一度 exit 1（2 failed suites，719 单测本身全过）。修复：E2E 文件改名
+  *.e2e.ts，playwright.config.ts 加 testMatch '**/*.e2e.ts'；未改
+  vite.config.ts（不在本卡输出范围内）。改后 npm run test 恢复 719/719。
+- J-T012-4（性能口径）：UI 耗时含 Playwright 开销（见 §6），与纯内核耗时
+  不是同一口径，两者都如实列出；分位数用 nearest-rank（p95 = 第 29 个）；
+  全套并行负载下的超标如实记 FAIL，不以独立运行的达标值替代验收结论。
+- J-T012-5（截图哈希巧合）：T012-A-origin-empty.png 与
+  T012-mobile390-A.png 的 SHA-256 与 T009 对应文件相同。原因是 UI 自
+  T009 未变、同一 Chromium 对同一 DOM 确定性渲染；两文件由本轮两次
+  Playwright 运行各写一次、哈希始终一致，不是复制 T009 的文件；C/D 两张
+  哈希与 T009 不同。截图均为本轮新鲜截取（见 §3 尺寸与哈希）。
+- J-T012-6（安全样本口径）：原始 <script>/<img> 标签在解析层即被拒
+  （INVALID_RAGGED_GRID），这是“不执行”的第一道防线；实体转义样本证明
+  恶意串以文本节点渲染；事件属性被解析器忽略且不进入渲染 DOM。三层
+  各有一例，见 §4。
+- J-T012-7（Blob URL 释放口径）：下载锚点在 click 后立即 remove，
+  revokeObjectURL 在 1s 后（ExportPanel.tsx）；测试在 1.2s 后断言 DOM
+  无 a[download]/blob: 链接。revoke 调用本身无法从外部直接观测，记为
+  代码级（setTimeout revoke）+ DOM 级（锚点移除）双重证据，不谎称直接
+  测到了 revoke。
+- J-T012-8（平台）：WINDOWS_NOT_TESTED。CSP 与 Worker 兼容性：本卡未发现
+  CSP 差异（页面零远程请求，见 §4）；Worker 线程未接入 UI（T010 的活，
+  T013 集成），无从核对 CSP 与 Worker 的兼容性，记为 NOT_RUN，留待 T013。
+
+## 8. Issues（未解决问题，直说）
+- ISSUE-T012-1（P2，未关闭）：p95 <= 500ms 在两次全套并行验收运行中均
+  未达标（527.4ms / 649.2ms）；独立运行达标（263.2ms / 282.8ms），内核
+  对照 109.7ms。按 IMPLEMENTATION_PLAN.md §11 为 P2 候选。建议后续：
+  性能测试放单独串行 job 跑，或接受为 P2；不得改表、降采样、虚构数字。
+  本卡 verdict：FAIL（以验收轮为准）。
+- ISSUE-T012-2（P2，未关闭）：取消按钮在当前主线程同步 analyze 下真实
+  不可达（见 J-T012-2）；jobId 守卫已由竞态测试覆盖，但“点取消丢弃在途
+  任务”的 UI 路径未被真实点击过。Worker 接线（T013）后应重测。
+- ISSUE-T012-3（已关闭，本卡内修复）：Vitest 误跑 .spec.ts 致 npm run test
+  一度 exit 1（见 J-T012-3）；改名 *.e2e.ts + testMatch 后恢复 719/719。
+- ISSUE-T012-4（记录）：vite preview 默认绑 IPv6 [::1]，127.0.0.1  readiness
+  检查失败致 webServer 首次 60s 超时；已加 --host 127.0.0.1（见 J-T012-1）。
+  这是环境适配，不是产品缺陷。
+
+## 9. 产物清单（本卡写入的全部文件；S0_REPORT.md / COORDINATOR_LOG.md 未碰）
+- tests/e2e/tablefork.e2e.ts（18935 bytes，20 条 E2E）
+- tests/e2e/performance.e2e.ts（3132 bytes，1 条性能测试）
+- tests/e2e/perf-table.ts（2100 bytes，32x12 固定表 + 元数据）
+- artifacts/screenshots/T012-A-origin-empty.png（294060 bytes）
+- artifacts/screenshots/T012-B-repeat-value.png（263736 bytes）
+- artifacts/screenshots/T012-C-no-witness.png（258709 bytes）
+- artifacts/screenshots/T012-D-unsupported.png（161803 bytes）
+- artifacts/screenshots/T012-mobile390-A.png（296565 bytes）
+- artifacts/screenshots/T012-perf-fail.png（145408 bytes）
+- artifacts/screenshots/T012-perf-fail-run2.png（145408 bytes）
+- artifacts/logs/T012-e2e.txt（本文件）
+- artifacts/logs/T012-cancel-probe.json（356 bytes）
+- artifacts/logs/T012-perf-browser.json（911 bytes，全套 run B 原始值）
+- artifacts/logs/T012-perf-browser-full-suite.json（915 bytes，全套 run A 原始值）
+- artifacts/logs/T012-perf-browser-full-suite-run2.json（911 bytes，全套 run B 原始值副本）
+- artifacts/logs/T012-perf-browser-standalone-run1.json（1252 bytes，独立 run 1 转录值）
+- artifacts/logs/T012-perf-browser-standalone-run2.json（908 bytes，独立 run 2 原始值）
+- artifacts/logs/T012-perf-fail-error-context.md（95380 bytes，run A 失败上下文）
+- artifacts/logs/T012-perf-fail-run2-error-context.md（95378 bytes，run B 失败上下文）
+- T012-performance.json（8634 bytes，根目录；verdict FAIL）
+- task_handoffs/P029-T012.json（另提交，见交接说明）
+- 未提交的磁盘保留物：test-results/ 下两次失败的 trace.zip（SHA 见 §5，
+  *.zip 在 .gitignore 中故不进仓库）。
+
+## 10. Handoff
+- Step-1 commit（本日志 + 代码 + 截图 + 性能 JSON）：SHA 记在
+  task_handoffs/P029-T012.json 的 result_commit（写于 step-1 提交之后）。
+- Step-2 commit（仅 handoff JSON）：另提交一次；SHA 向 parent 汇报。

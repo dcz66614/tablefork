@@ -1,0 +1,167 @@
+# P029-T004 flatten evidence log
+# Generated: 2026-11-21T00:32Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: a007b79 (P029-T003 handoff; product cc5e658).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T004 双策略 Markdown 投影 — src/core/flatten.ts
+#        + temporary local tests (T004 TEMPORARY, to be taken over by T011).
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 0
+  - Test Files: 2 passed (2) — tests/core/t003-temp.test.ts (67 tests, unchanged)
+    and tests/core/t004-temp.test.ts (19 tests, new).
+  - Tests: 86 passed (86), 0 failed. Duration 707ms (tests 106ms).
+  - NOTE: tests/property does not exist yet (T011 scope); vitest runs the
+    tests/core filter and exits 0. No property tests exist or are claimed.
+- Evidence script: npx tsx /tmp/t004-evidence.ts: exit 0 (see §5).
+- No external model API called; no Qoder; no password/key files touched.
+- git status at log time: only the new T004 files are untracked
+  (src/core/flatten.ts, tests/core/t004-temp.test.ts, artifacts/logs/T004-flatten.txt);
+  S0_REPORT.md and COORDINATOR_LOG.md remain untouched untracked coordinator files.
+
+## 2. Files produced by this task (only these)
+- src/core/flatten.ts (new)
+- tests/core/t004-temp.test.ts (new; header-marked T004 TEMPORARY — to be taken over by T011)
+- artifacts/logs/T004-flatten.txt (this file)
+- task_handoffs/P029-T004.json (second commit, see §8)
+NOT modified (per the card): src/core/types.ts, src/core/index.ts,
+src/core/parse.ts, src/core/grid.ts, src/core/headers.ts,
+src/worker/protocol.ts, oracle/*, src/ui/*, src/main.tsx, package.json,
+package-lock.json, docs/, bundle/, drive-copies/, v1.0.0-archive/,
+S0_REPORT.md, COORDINATOR_LOG.md. src/core/index.ts mounting is left to T013
+as instructed; the new module is imported directly by relative path in tests.
+
+## 3. SHA-256 of the produced source files (sha256sum, real output)
+- 8f31ecb48afa39c04cfa65e574a2a924b4f175c6dca6be6c3c25f81bcc741fe1  src/core/flatten.ts
+- 866e53b0abb59b470acce2a7dbdc244b0f9f4703ede460f0b213561e68e3e4d1  tests/core/t004-temp.test.ts
+(Git result_commit SHA is recorded in task_handoffs/P029-T004.json, not here,
+to avoid self-reference: this log is part of the step-1 commit.)
+
+## 4. Implemented functions (public API)
+flatten.ts (imports only the frozen Strategy type from './index' and the
+GridResult type from './grid'; no type in types.ts / index.ts / protocol.ts
+was changed; no T003 file was modified):
+- escapeMarkdownCell(text: string): string — escape `\` -> `\\` FIRST, then
+  `|` -> `\|` (§5.1 frozen order). No whitespace folding (parse.ts owns that).
+- flattenGrid(grid: GridResult, strategy: Strategy): string — F_p (§5.1):
+  one `| cell |` row per grid row from slotOwner, separator row `| --- |...|`
+  after row 1, every line LF-terminated including the last (J-T004-1).
+  ORIGIN_EMPTY shows text only at the origin slot, else ''; REPEAT_VALUE shows
+  the origin text in every covered slot. Both strategies share the same grid.
+- flattenOriginEmpty(grid: GridResult): string — F for ORIGIN_EMPTY.
+- flattenRepeatValue(grid: GridResult): string — F for REPEAT_VALUE.
+All four are pure functions (no random, time, environment, or I/O); the same
+input run 100 times is byte-identical (see §5 determinism lines and the test).
+
+## 5. Byte-exact input/output examples (real output, `npx tsx /tmp/t004-evidence.ts`, exit 0)
+# JSON.stringify form: \n is LF, \\ is one backslash, \| is backslash+pipe.
+# Every output below ends with exactly one trailing LF and contains no CR.
+--- E1 §6.3 ORIGIN_EMPTY ---
+"| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n"
+utf8 bytes=87 sha256=83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1 containsCR=false
+NOTE: byte-for-byte identical to the four lines in PROJECT_BOOK §6.3
+(plus the single trailing LF pinned by J-T004-1).
+--- E2 §6.3 REPEAT_VALUE ---
+"| 产品 | 2026预算 | 2026预算 |\n| --- | --- | --- |\n| 产品 | 收入 | 成本 |\n| A | 120 | 80 |\n"
+utf8 bytes=103 sha256=e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb containsCR=false
+--- E3 colspan=2 header, ORIGIN_EMPTY ---
+"| 预算 |  |\n| --- | --- |\n| 120 | 80 |\n"
+utf8 bytes=41 sha256=e672f3bc99b41f6f2fbe69c6c7c684daef94d885102a20990b87c8dd47a82c4b containsCR=false
+--- E4 colspan=2 header, REPEAT_VALUE ---
+"| 预算 | 预算 |\n| --- | --- |\n| 120 | 80 |\n"
+utf8 bytes=47 sha256=85ad12093660856eeab1fab59a04e1643b6ca96304938844dd1e4a1d791092bf containsCR=false
+--- E5 rowspan=2 row header (TFK-B-like), ORIGIN_EMPTY ---
+"| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n|  | b |\n"
+utf8 bytes=59 sha256=07ee8352fedbc05625768076052d046569d23e3350b82b8196e038d2711c1961 containsCR=false
+--- E6 rowspan=2 row header (TFK-B-like), REPEAT_VALUE ---
+"| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n| 部门X | b |\n"
+utf8 bytes=66 sha256=443b6ef12b13de27fec16fe757f250c40d49afb2aa0315466986e270f94c4d61 containsCR=false
+--- E7 escapes: cells `a|b\c` and `x\y|z`, ORIGIN_EMPTY ---
+"| a\\|b\\\\c | x\\\\y\\|z |\n| --- | --- |\n"
+utf8 bytes=36 sha256=ef4169b37168eaaea15b35005475dc972a280777b1ea4e70ad61f58731644d2c containsCR=false
+NOTE: `a|b\c` -> `a\|b\\c` (backslash first, then pipe); `x\y|z` -> `x\\y\|z`.
+--- E8 CRLF input, ORIGIN_EMPTY ---
+Input HTML used CRLF line breaks between tags AND CRLF inside the first
+header cell (`<th>A\r\nB</th>`); the parse stage folds the in-cell CRLF to
+one space (PROJECT_BOOK §5.1: newline handling belongs to extraction).
+"| A B | C |\n| --- | --- |\n| 1 | 2 |\n"
+utf8 bytes=36 sha256=230d9c3891688aaceddb900de7be3e020fc237ceacc6fa80d8dc4e01f260a801 containsCR=false
+NOTE: output contains no CR; all line breaks are LF. REPEAT_VALUE on the
+same input is identical (no spans in this table).
+--- determinism (same script, §6.3 grid) ---
+determinism ORIGIN_EMPTY: 100/100 identical, sha256=83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+determinism REPEAT_VALUE: 100/100 identical, sha256=e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb
+(The test suite independently re-proves 100/100 for both strategies.)
+
+## 6. CRLF / LF behaviour (summary of §5 + the tests)
+- flatten.ts itself only ever emits LF (`\n` joins + one trailing LF); it
+  never emits CR, because it builds lines from already-normalised grid text.
+- CRLF can only reach flatten through cell text, and parse.ts
+  (normalizeCellText) folds CR/LF/CR-LF inside cells to a single U+0020
+  before grid construction — verified by E8 and by the CRLF/CR tests in
+  tests/core/t004-temp.test.ts. No `\r` survives into any output above.
+
+## 7. Documented judgement calls (spec does not pin these down; see flatten.ts header)
+J-T004-1. Trailing newline: §5.1 "最后统一 LF 换行" is read as "every
+    generated line is LF-terminated", i.e. the output ends with a single LF
+    after the last row. The §6.3 byte-exact test pins this reading. If T011 /
+    the independent Oracle rule the other way ("lines joined by LF, no
+    trailing newline"), the fix is one line (`lines.join('\n')`); until then
+    this reading is the frozen behaviour. This is the most consequential
+    call in this card — it decides byte equality in T007 compare and T005
+    witness, so it needs T011 / final-review confirmation.
+J-T004-2. Empty-value cells: an empty origin cell and an empty ORIGIN_EMPTY
+    extension slot are indistinguishable in output (`|  |`). That is the
+    information loss §5.1 defines for F, not a defect of this module.
+J-T004-3. Separator row: fixed `---` per column, inserted after row 1
+    regardless of section (thead/tbody); §5.1 says "after row 1" with no
+    section qualifier.
+J-T004-4. Escape scope: only `\` and `|` are escaped; `*`, `_`, backtick,
+    `#` etc. are left as-is (§5.1 freezes only these two).
+J-T004-5. flatten.ts does NOT re-normalise whitespace: cell text arrives
+    already normalised from parse.ts (§5.1: newline handling is an
+    extraction-stage matter). A hand-built GridResult carrying a raw `\r`
+    or `\n` in cell text would pass it through escaped only for `\`/`|`;
+    all real grids come from parseValidatedTable + buildGrid, so this
+    cannot occur through the pipeline.
+
+## 8. Test coverage (tests/core/t004-temp.test.ts, 19 tests, 19 passed)
+- §6.3 worked example (3 tests): ORIGIN_EMPTY byte-exact incl. trailing LF,
+  REPEAT_VALUE byte-exact, flattenGrid(strategy) agrees with named helpers.
+- No-span tables (2 tests): plain 2x2 identical under both strategies;
+  1x1 still gets a separator row after row 1.
+- colspan / rowspan (6 tests): colspan=2 ORIGIN_EMPTY/REPEAT_VALUE,
+  colspan=3 grouping both strategies, rowspan=2 row header both strategies,
+  2x2 span (rowspan=2 + colspan=2) both strategies.
+- Escaping (3 tests): escapeMarkdownCell unit cases incl. the order-sensitive
+  `\|` -> `\\\|` case; pipe+backslash cells in both strategies; other Markdown
+  metacharacters NOT escaped (J-T004-4).
+- CRLF input (2 tests): CRLF between tags + inside a cell -> LF-only output
+  `| A B | C |`; CR-only inside a cell folds to a space (parse stage).
+- Empty cells / empty headers (2 tests): empty header + empty data cells;
+  empty origin cell indistinguishable from an empty extension slot (J-T004-2).
+- Determinism (1 test): §6.3 grid, both strategies, 100 consecutive runs
+  byte-identical with identical SHA-256 each run.
+NOT covered here (T011 scope): the 48 Golden fixtures, 200-seed property
+tests, Oracle cross-check, witness/compare/records/report behaviour.
+This file must not be quoted as "tests complete".
+
+## 9. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): src/core/flatten.ts + tests/core/t004-temp.test.ts
+  + this log file.
+- Step 2 (handoff commit): task_handoffs/P029-T004.json only.
+- Real SHAs are recorded in task_handoffs/P029-T004.json (result_commit =
+  step-1 SHA) and in the final report.
+
+## 10. Open issues (non-blocking; no rollback was needed)
+- J-T004-1 (trailing LF) is the one judgement call that can break byte
+  equality with the independent Oracle / Golden if they read §5.1 the other
+  way. Recommend T011 and the final review confirm or re-pin it; changing
+  it later is a one-line change in flatten.ts plus the §6.3 test expectation.
+- WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).
+- No performance measurement was made in this card (p95 <=500ms on 32x12 is
+  a T012 gate); flatten is a single linear pass over at most 32x12 slots
+  with no I/O, but no timing claim is made here.
+- No contract conflict was found: T002's frozen types were sufficient; the
+  spec's F rules landed as written, no baseline restore, no shortest-diff
+  report was needed.

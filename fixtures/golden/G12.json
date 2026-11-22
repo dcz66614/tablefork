@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G12",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>A</th><th>B</th><th>C</th></tr></thead><tbody><tr><td>1</td><td colspan=\"2\">2-3</td></tr><tr><td>4</td><td>5</td><td>6</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G12"
+}

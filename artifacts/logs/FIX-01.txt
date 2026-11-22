@@ -1,0 +1,120 @@
+P029-FIX-01: invalidate in-flight analysis on input change (R1 P1-01)
+======================================================================
+执行员：FIX-01 子代理；工作根目录 ~/workspace/p029-tablefork/
+基线：HEAD 607cf96（树干净，除协调员未跟踪文件 COORDINATOR_LOG.md /
+S0_REPORT.md / test-results/ 外，未碰）。
+
+1. 缺陷（R1 P1-01，主聊天已亲自读源码核实；R1 全文 ~/workspace/P029_FINAL_REVIEW_R1.md）
+--------------------------------------------------------------------------------
+- src/ui/App.tsx 的 resetResult() 只清 outcome/error/selectedSlot，不清
+  pendingRef、不递增 jobSeqRef；onHtmlChange / onMarkdownChange /
+  onStrategyChange / onSelectPreset 只调 resetResult()。
+- Worker 回调只比 jobId/seq，不比当前输入与任务快照；旧结果用
+  pending.html 重建 gridA 后进入当前 UI 的 outcome。
+- src/ui/InputPanel.tsx 的 textarea 在 ANALYZING 时无 disabled，可编辑
+  输入、切换预设和策略。
+- 违反 PROJECT_BOOK.md §4.2、§6.2 及第 209 行（"主线程只应用 jobId 与
+  最新输入版本一致的结果"）、第 284 行（"撤销/换输入时丢弃旧结果"）。
+
+2. 根因
+--------------------------------------------------------------------------------
+输入变化与在途任务之间没有任何失效关联：结果的采纳只看 jobId 序列号，
+而序列号只在发起新分析 / 取消 / 清空时才递增；单纯改输入不递增、不清
+pending、不发 CANCEL，所以旧 RESULT 到达时 seq 仍是最新、pending 仍在，
+被当成当前输入的结果采纳并进入 outcome，进而可导出。
+
+3. 改动（只改 src/ui/App.tsx 与 tests/e2e/tablefork.e2e.ts；未动 Worker、
+   未动 InputPanel、未动 src/core/* 与任何规格/脚本/版本号）
+--------------------------------------------------------------------------------
+src/ui/App.tsx（路线 a + b 组合，主线程修复）：
+(a) 新增 invalidateInFlight()：仅当 pendingRef.current !== null（真有在途
+    任务）时才动作——向 Worker 发 CANCEL（jobId 取 pending.seq，Worker 侧
+    generation 守卫使已入队未执行的旧任务不产生回复）、清 pendingRef、
+    jobSeqRef += 1（使万一漏网的旧 RESULT/ERROR 在回调 seq 比对中被丢弃）、
+    setAnalyzing(false) + setJobId('') 回到 READY。无在途任务时是 no-op，
+    不碰序列号。与 cancelAnalysis / clearAll 的取消逻辑一致。
+    resetResult() 首行调用它，于是全部输入变化路径都经此失效：
+    onHtmlChange、onMarkdownChange、onStrategyChange、onSelectPreset，
+    以及 onFillCanonical（它改 markdown，同样经 resetResult() 失效）。
+(b) Worker 回调纵深防御：seq 比对通过后，再比 pending 快照
+    （html/markdown/strategy）与当前输入是否一致；不一致则丢弃该回复，
+    并清 pending + analyzing + jobId（这是该旧任务的唯一回复，丢弃后不
+    再有后续消息能把 analyzing 清掉，必须在这里清，避免转圈假死）。
+    当前输入由新增的 inputsRef 镜像（每轮提交后经 useEffect 同步），
+    供只注册一次的 onmessage 回调读取，避免闭包拿到旧 state。
+    另补文件头与 onmessage 处注释，说明失效语义。
+未动 src/worker/tablefork.worker.ts：其 generation 守卫已能处理 CANCEL /
+新 ANALYZE（CANCEL 同步登记、版本号 +1、已入队未执行的旧 job 不产生
+回复），主线程修复已足够；无须动 Worker 侧。
+未动 src/ui/InputPanel.tsx（未锁定输入），理由见 §6。
+
+tests/e2e/tablefork.e2e.ts（并入既有 functional 文件，未改
+playwright.config.ts 的 testMatch——新测试与既有 20 条同属 functional，
+无需新 project）：
+- 新增 expectNoResult()  helper：比较按钮可用、无见证（CERTIFIED_COLLISION
+  与 NO_WITNESS_FOUND 均为 0）、无双表、无逐格交接稿/证据 JSON、
+  “下载 JSON” disabled、显示“分析后这里显示…”空态。
+- 新增 'stale result: switching preset mid-analysis never shows the old
+  result (P1-01)'：严格按 GPT 5 步复现——填 32×12 性能表 → 比较点击与
+  TFK-C 预设切换在同一个 JS 任务里同步发出（必定落在 Worker 的
+  macrotask 让步之前，旧任务尚未返回任何结果；时序不依赖 sleep/轮询
+  阈值）→ 等 5s（隔离 p95 约 260ms，5s 远超完成时间）→ expectNoResult()
+  → 随后重新分析 TFK-C 正常出 NO_WITNESS_FOUND（失效只丢旧任务，
+  不破坏后续分析）。
+- 新增 'stale result: switching strategy mid-analysis never shows the old
+  result (P1-01)'：同一机制覆盖策略切换路径（切 REPEAT_VALUE，不启动
+  第二次分析）；随后重新分析只断言有新结果出现（双表可见），不硬断言
+  见证值（性能表在 REPEAT_VALUE 下的见证值不属于本卡回归范围）。
+- 既有测试断言一字未改。
+
+4. 验收（全部退出码 0；TMPDIR 均指到持久磁盘 .tmp-tmpdir，/tmp 未满）
+--------------------------------------------------------------------------------
+- npm run typecheck：exit 0（tsc --noEmit）。
+- npm run test:core：719/719（10 files；无新增单测，总数不变）。
+- npm run oracle：48/48 passed（0 failed）。
+- npm run test:e2e：22 passed（20 既有 + 2 新增；32.4s）。
+- npm run test:e2e:perf：1 passed（20.9s；30 runs 170.3–403.2ms，
+  p95 约 337ms，≤500ms；见证 CERTIFIED_COLLISION）。
+- npm run build：exit 0（tsc + vite build）。
+- 新回归测试确定性证据（见 §5）。
+
+5. 回归测试确定性证据（functional project，真实 Chromium）
+--------------------------------------------------------------------------------
+修复前（代码未动，只加了 2 条新测试）：
+  npx playwright test --project=functional -g "stale result" --repeat-each=10
+  → 20 failed（2 条测试 × 10 次重复全部失败；失败点均为 expectNoResult，
+  旧结果稳定显示——缺陷 10/10 复现）。
+修复后（同一命令）：
+  → 20 passed（1.5m；2 条测试 × 10 次重复全部通过）。
+结论：测试非时序 flaky——修复前 10/10 失败、修复后 10/10 通过。
+
+6. 决定与说明
+--------------------------------------------------------------------------------
+D1. 未在 ANALYZING 时锁定 InputPanel 输入（未选路线 c）。理由：规格 §4.2
+    只说 ANALYZING 时“按钮变取消”，未明说锁定输入；锁定会挡住 GPT 复现
+    的第 2 步本身（分析中切预设）与既有 cancel/race 测试的流程（分析中
+    换预设再分析），等于用“不让用户操作”掩盖缺陷而非修复失效语义。
+    路线 (a)+(b) 已保证旧结果永不显示、永不导出，同时保留“比较前仍允许
+    修改”（READY 态编辑不受影响）与键盘/无障碍测试（keyboard 测试在
+    全量 e2e 中仍通过）。
+D2. 未动 Worker 侧（见 §3）。
+D3. 未改 playwright.config.ts：新测试并入 tests/e2e/tablefork.e2e.ts，
+    仍属 functional project；perf project 保持 1 条隔离性能测试不变。
+D4. e2e 运行写脏的两个易变日志（artifacts/logs/T012-cancel-probe.json、
+    artifacts/logs/T012-perf-browser.json）已用 git checkout 恢复，
+    不在提交内（与 T013 做法一致）；.tmp-tmpdir 已删除。
+
+7. 遗留项
+--------------------------------------------------------------------------------
+- P1-02（导出证据 JSON 缺少 jobId/inputHash/specVersion，规格 §9 与 §6.1
+  冲突）不在本卡范围：src/core/* 报告形状冻结，等 FIX-02。本卡未碰。
+- 既往 P2 记录问题（T009-FIX-01 L2/L3、T006 O6、T007/T008 等）未改动，
+  留待终审；见 task_handoffs/P029-FIX-01.json 的 issues。
+
+8. 提交
+--------------------------------------------------------------------------------
+- 修复提交：见 task_handoffs/P029-FIX-01.json 的 result_commit
+  （消息 "P029-FIX-01: invalidate in-flight analysis on input change (P1-01)"；
+  不含 handoff——handoff 须填该提交的完整 SHA，按 T012/T013/T014 既往做法
+  另起一个 handoff 提交，见 handoff 的 notes）。
+- handoff 提交：task_handoffs/P029-FIX-01.json 本身。

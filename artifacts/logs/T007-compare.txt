@@ -1,0 +1,265 @@
+# P029-T007 compare evidence log
+# Generated: 2026-11-21T01:05Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 93bc22f (P029-T006 handoff).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T007 用户 Markdown 严格对账 — src/core/compare.ts + src/io/*
+#        + temporary local tests (T007 TEMPORARY, to be taken over by T011).
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 0
+  - Test Files: 4 passed (4) — tests/core/t003-temp.test.ts (67 tests, unchanged),
+    tests/core/t004-temp.test.ts (19 tests, unchanged),
+    tests/core/t005-temp.test.ts (17 tests, unchanged),
+    tests/core/t007-temp.test.ts (29 tests, new).
+  - Tests: 132 passed (132), 0 failed. Duration 1.73s (tests 610ms).
+    Before this card: 103/103. New total: 132/132 (+29, all T007).
+  - NOTE: tests/property does not exist yet (T011 scope); vitest runs the
+    tests/core filter and exits 0. No property tests exist or are claimed.
+- Evidence script: npx tsx /tmp/t007-evidence.ts: exit 0 (see §4).
+- No external model API called; no Qoder; no password/key files touched.
+- git status at log time: only the new T007 files are untracked
+  (src/core/compare.ts, src/io/, tests/core/t007-temp.test.ts) plus the
+  one-line .gitignore addition (__pycache__/); S0_REPORT.md and
+  COORDINATOR_LOG.md remain untouched untracked coordinator files.
+
+## 2. Files produced by this task (only these)
+- src/core/compare.ts (new)
+- src/io/localText.ts (new)
+- src/io/index.ts (new; barrel re-export only)
+- tests/core/t007-temp.test.ts (new; header-marked T007 TEMPORARY — to be taken over by T011)
+- artifacts/logs/T007-compare.txt (this file)
+- task_handoffs/P029-T007.json (second commit, see §10)
+- .gitignore: one line appended — `__pycache__/` (task-authorised; oracle/
+  had no __pycache__ at run time, this only prevents a future accidental commit)
+NOT modified (per the card): src/core/witness.ts, grid.ts, oracle/*,
+src/core/flatten.ts, parse.ts, headers.ts, types.ts, src/core/index.ts,
+src/worker/protocol.ts, src/main.tsx, any UI component, docs/, bundle/,
+package.json, package-lock.json, S0_REPORT.md, COORDINATOR_LOG.md.
+src/core/index.ts mounting is left to T013 as instructed; the new modules
+are imported directly by relative path in tests (same convention as T003–T005).
+
+## 3. SHA-256 of the produced source files (sha256sum, real output)
+- f56e8caf7dc6cbac19838d53250887b5b07052edfca8ed8644a5dc1693d7c504  src/core/compare.ts
+- f85a5b0143fb7eca41435dac4f857e7a1b5701dfac729689c6b569d6fe917fe0  src/io/localText.ts
+- 31b588b0386e3eb7fa47fa460070c748cd042d2291af13ae3348d39334662590  src/io/index.ts
+- 4ba9216eb45687fb533b5ec4ea3fc3d818421043eee77f2f4905698f7b570aef  tests/core/t007-temp.test.ts
+(Git result_commit SHA is recorded in task_handoffs/P029-T007.json, not here,
+to avoid self-reference: this log is part of the step-1 commit.)
+
+## 4. Implemented functions (public API)
+compare.ts (pure functions; imports only MAX_INPUT_BYTES from './index' and
+fail() from './parse' for the OVER_SIZE error path; no DOM, no Node-only
+calls, no state, no cache, no I/O; does NOT import witness.ts):
+- compareMarkdown(suppliedMarkdown: string | undefined, canonicalMarkdown: string):
+    CompareResult — strict UTF-8 byte comparison of M vs F(A).
+    Returns CompareStatus (EXACT_MATCH / EXACT_DIFF / NOT_SUPPLIED) plus a
+    GfmCheckResult, byte lengths, a one-line Chinese summary, and — only for
+    EXACT_DIFF — a FirstDiff (first differing byte offset, per-side char
+    index, byte value, full char at the diff point, and ±16-char display
+    context). Never returns or references any witness state.
+- detectGfmPipeTable(markdown: string): GfmCheckResult — single-GFM-pipe-table
+    shape check (SINGLE_PIPE_TABLE / NOT_A_PIPE_TABLE / MULTIPLE_TABLES /
+    NOT_CHECKED), with row/column counts and per-line issues (1-based).
+- Types: GfmTableStatus, GfmCheckResult, FirstDiff, CompareResult.
+localText.ts (local-only text intake; zero network):
+- textFromPaste(pastedText: string): string — paste passthrough, size-checked.
+- readTextFromBlob(blob: Blob): Promise<string> — Blob.text(), local API.
+- readTextFromFile(file: File): Promise<string> — File.text(), local API.
+- readTextFromSource(source: LocalTextSource): Promise<string> — dispatch over
+  { paste | file | blob | url }; url kind throws before any read (see §6).
+- isRemoteUrl(value: string): boolean; assertWithinSizeLimit(text: string): void.
+- Type: LocalTextSource (discriminated union of the four source kinds).
+
+## 5. Byte-exact evidence examples (real output, `npx tsx /tmp/t007-evidence.ts`, exit 0)
+# JSON.stringify form: \n is LF, \\ is one backslash, \| is backslash+pipe.
+# F(A) in every example below was produced by flattenOriginEmpty() from the
+# §6.3 HTML (E1/E2) or a CJK table (E3) — never hand-written fake Markdown.
+--- E1 EXACT_MATCH (§6.3 ORIGIN_EMPTY) ---
+canonical (F(A)): "| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n"
+utf8 bytes=87 sha256=83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+supplied (M): identical to F(A) (87 bytes, same sha256)
+result: status=EXACT_MATCH, gfm=SINGLE_PIPE_TABLE (tableCount=1, rowCount=4,
+columnCount=3, issues=[]), suppliedByteLength=87, canonicalByteLength=87,
+firstDiff absent. summary="M 与 F(A) 逐字节相同（EXACT_MATCH）。"
+NOTE: sha256 83da51... matches the T004 log E1 value for the same F(A).
+--- E2 EXACT_DIFF: only the trailing LF missing ---
+supplied (M): "| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |"
+  (F(A) minus its single trailing LF)
+utf8 bytes=86 sha256=66b83b17f1c47bfaf97fe7a3145201ccc3e0cd94ba2b87353242ad367cd9ff90
+result: status=EXACT_DIFF, gfm=SINGLE_PIPE_TABLE (rowCount=4, columnCount=3),
+firstDiff.byteOffset=86, suppliedCharIndex=null (M ended at this point),
+canonicalCharIndex=70, suppliedByteAtDiff=absent (M ended),
+canonicalByteAtDiff=10 (0x0a, LF), canonicalCharAtDiff="\n",
+suppliedContext="| A | 120 | 80 |", canonicalContext="| A | 120 | 80 |\n",
+suppliedByteLength=86, canonicalByteLength=87.
+NOTE: the missing trailing LF is a byte difference, not an ignorable one —
+consistent with J-T004-1 (F ends with a single LF). The mirror case
+(M = F + one extra LF) gives byteOffset=87, also EXACT_DIFF (test-pinned).
+--- E3 EXACT_DIFF: CJK byte-offset (byte offset ≠ char offset) ---
+canonical (F(A)) from <table><tbody><tr><td>产品</td><td>甲</td></tr></tbody></table>:
+"| 产品 | 甲 |\n| --- | --- |\n" — utf8 bytes=31, code points=25
+supplied (M): "| 产品 | 乙 |\n| --- | --- |\n" (甲 -> 乙) — utf8 bytes=31
+result: status=EXACT_DIFF, gfm=SINGLE_PIPE_TABLE (rowCount=2, columnCount=2),
+firstDiff.byteOffset=11, suppliedCharIndex=7, canonicalCharIndex=7,
+suppliedByteAtDiff=228 (0xe4, first byte of 乙), canonicalByteAtDiff=231
+(0xe7, first byte of 甲), suppliedCharAtDiff="乙", canonicalCharAtDiff="甲",
+suppliedContext="| 产品 | 乙 |\n| --- | --- |",
+canonicalContext="| 产品 | 甲 |\n| --- | --- |",
+suppliedByteLength=31, canonicalByteLength=31.
+Hand-check of 11 vs 7: '| ' 2 bytes + '产品' 6 bytes + ' | ' 3 bytes = byte 11;
+char index of 甲/乙 is 7 ('|',' ','产','品',' ','|',' '). byteOffset (11) ≠
+char offset (7) — the numerical assertion is pinned in the test.
+--- E4 (extra): an error / non-table input is never a collision certificate ---
+compareMarkdown('hello world', §6.3 F(A)): status=EXACT_DIFF,
+gfm=NOT_A_PIPE_TABLE, 'witness' in result === false, 'proof' in result === false.
+M of 65,537 'x' bytes: throws TableForkInputError, code=OVER_SIZE (no
+CompareStatus produced). M of exactly 65,536 bytes: EXACT_DIFF, no throw
+(boundary pinned in the test).
+
+## 6. src/io: supported and refused sources (zero network)
+Supported (local only, no fetch/XHR/remote URL):
+- paste: string already in hand (textarea paste); returned as-is, size-checked.
+- file: user-picked local .md/.html File via File.text().
+- blob: local Blob via Blob.text().
+Refused:
+- url kind of LocalTextSource (any http/https/protocol-relative URL):
+  readTextFromSource throws Error("拒绝远程 URL 作为文本来源：…") BEFORE any
+  read; nothing is fetched. The error is a plain Error, not a TableForkError
+  (see J-T007-8 for why no enum code is used).
+- Over-size input (> 64 KiB UTF-8, §3.1): textFromPaste / readTextFromBlob /
+  readTextFromFile / compareMarkdown all throw TableForkInputError OVER_SIZE;
+  blobs are pre-checked by blob.size before reading.
+Not done by this layer (by design): no caching, no persistence, no clipboard
+watching, no localStorage/IndexedDB; editing happens in the UI textarea
+(T009), clearing is UI state (this layer keeps no copy of the text).
+
+## 7. GFM subset detection rules (detectGfmPipeTable)
+A "pipe row" is a line containing at least one unescaped '|'; cells are split
+on unescaped '|' only ('\|' does not split — F escapes cell pipes as \| per
+§5.1, so detection must recognise it). Optional leading/trailing '|' are
+outer framing, not cells. A delimiter row is a row whose every cell matches
+:?-+:? after trimming. A "table block" is a run of contiguous pipe rows.
+- SINGLE_PIPE_TABLE: exactly one block, block has ≥2 rows, row 2 is a
+  delimiter, every row has the same cell count, and outside the block there
+  are only blank lines. rowCount/columnCount are reported.
+- MULTIPLE_TABLES: ≥2 blocks each satisfying the table conditions.
+- NOT_A_PIPE_TABLE: everything else, with per-line issues (1-based):
+  * no pipe rows at all ("M 不含任何 pipe 表行");
+  * a block of a single row ("只有一行 pipe 行，缺少分隔行");
+  * row 2 not a delimiter ("不是合法分隔行");
+  * a row whose cell count differs from the header ("列数 … 与表头列数 … 不一致");
+  * non-table text lines outside a table ("非表格文本");
+  * one valid table plus other content (extra text or extra non-table blocks).
+- Boundary cases (all test-pinned): blank lines split blocks (two blocks
+  separated by a blank line are two tables, or non-tables if malformed);
+  a table with header + delimiter but zero body rows IS a table (rowCount 2);
+  detection trims surrounding whitespace per line for SHAPE classification
+  only — the byte comparison never trims anything (J-T007-5).
+- Detection never rewrites the input and never normalizes: CRLF line
+  endings are handled by per-line trim during classification only.
+
+## 8. Documented judgement calls (spec does not pin these down)
+J-T007-1. NOT_SUPPLIED: undefined OR '' both mean "未输入 M" (§5.3).
+    Rationale: in the UI textarea '' is exactly "nothing pasted", synonymous
+    with undefined; calling it EXACT_DIFF would mislead the user into
+    thinking input was supplied but mismatched. A whitespace-only string
+    (' ', '\n') IS supplied input: it goes through normal comparison
+    (EXACT_DIFF + NOT_A_PIPE_TABLE diagnosis). NOT_SUPPLIED reports
+    gfm NOT_CHECKED ("M 未提供，未做 GFM pipe 表检测") — absence of input
+    is not reported as "not a pipe table".
+J-T007-2. Error path: M over 64 KiB UTF-8 (§3.1) throws TableForkInputError
+    with code OVER_SIZE (reusing parse.ts fail(); no CompareStatus is
+    produced). A non-string canonicalMarkdown / suppliedMarkdown is a
+    caller programming error: it throws TypeError, deliberately NOT a
+    TableForkError — the 7-code enum only covers HTML table structure
+    errors, and misusing one of its codes would mislabel the failure.
+    "Invalid input" for compare otherwise means: non-pipe / multi-table /
+    ragged M, which is a DIAGNOSIS (NOT_A_PIPE_TABLE / MULTIPLE_TABLES),
+    not an exception — M is arbitrary user text, and only the size limit
+    and type contract are hard errors.
+J-T007-3. Character index = Unicode code-point index (for...of order), not
+    UTF-16 unit index; they coincide for BMP text (all CJK in the evidence)
+    and differ only for astral characters. Byte offsets come from TextEncoder.
+    TextEncoder replaces lone surrogates with U+FFFD by definition — that is
+    the platform UTF-8 encoder's behaviour on an ill-formed JS string, not
+    a normalization step applied by this module; real pasted/file text is
+    well-formed UTF-16. No NFC/NFD, CRLF folding, trim, BOM stripping, or
+    trailing-space removal is performed anywhere in this module.
+J-T007-4. GFM strictness: ragged body rows (column count ≠ header) are
+    reported as NOT_A_PIPE_TABLE, stricter than the GFM spec (which tolerates
+    them by padding/ignoring). Rationale: F(A) never emits ragged rows, so a
+    ragged M can never equal F(A); flagging it explicitly is more useful
+    than silently accepting it as "a table". If T011 / final review wants
+    spec-literal tolerance, the change is confined to detectGfmPipeTable.
+J-T007-5. Detection trims whitespace only for shape classification; the
+    byte comparison is always raw. A line with leading spaces still counts
+    as a table row for detection, but its spaces are byte differences in
+    comparison (test-pinned: trailing space before LF → EXACT_DIFF at that
+    byte).
+J-T007-6. Integrity boundary: compare.ts does not import witness.ts and its
+    result type has no witness/proof/collision fields (asserted in tests:
+    'witness'/'proof'/'collision' not in result). An EXACT_DIFF or a GFM
+    diagnosis can never be mistaken for a collision certificate; a
+    CERTIFIED_COLLISION claim can only come from witness.ts (T005) via
+    analyze() (T008). M ≠ F(A) never implies anything about M vs F(B).
+J-T007-7. Worker jobId contract: compareMarkdown is stateless, pure, and
+    takes no jobId and returns none — nothing to cache, nothing to go stale.
+    jobId lives only in the protocol envelope (src/worker/protocol.ts:
+    WorkerRequestMessage / WorkerResponseMessage), which this card does not
+    modify. The future Worker ANALYZE handler (T010) will call
+    compareMarkdown(payload.suppliedMarkdown, canonical) inside the handler
+    and echo the SAME jobId in its RESULT/ERROR reply; the main thread only
+    applies results whose jobId matches the latest input version (protocol
+    contract, already frozen in T002). No new protocol type was needed, so
+    none was created — adding one would have duplicated protocol.ts.
+J-T007-8. Remote-URL refusal uses a plain Error, not TableForkError: the
+    frozen 7-code enum (types.ts) covers HTML table structure errors only
+    (INVALID_SPAN / OVERLAP / RAGGED / OVER_SIZE / NESTED / HEADER /
+    CANCELLED); there is no "remote source" code, and reusing OVER_SIZE or
+    UNSUPPORTED_* would mislabel the failure. The message names the URL and
+    states no request was made.
+
+## 9. Test coverage (tests/core/t007-temp.test.ts, 29 tests, 29 passed)
+- EXACT_MATCH (2): §6.3 ORIGIN_EMPTY byte-exact (87 bytes) and REPEAT_VALUE.
+- EXACT_DIFF, LF only (4): missing trailing LF (byteOffset 86, char 70,
+  canonical byte 0x0a, M ended); extra trailing LF (byteOffset 87); CRLF
+  (byteOffset 9, 0x0d vs 0x0a); trailing space not trimmed (byteOffset 9).
+- CJK byte-offset (2): 甲→乙 (byteOffset 11, char index 7, bytes 228/231,
+  31 bytes vs 25 code points); BOM (byteOffset 0, 0xef vs 0x7c).
+- NOT_SUPPLIED (3): undefined, '', whitespace-only is EXACT_DIFF (J-T007-1).
+- GFM detection (7): plain text (no witness fields), two tables
+  (MULTIPLE_TABLES, count 2), missing delimiter (line 2), column mismatch
+  (line 3), extra text after table, escaped pipe \| (still 2-col table),
+  blank-line-split non-table blocks.
+- Error path (4): M 65,537 bytes → OVER_SIZE; M exactly 65,536 bytes OK;
+  non-string canonical → TypeError; non-string supplied → TypeError.
+- src/io (7): paste passthrough, paste over-size → OVER_SIZE, Blob read,
+  over-size Blob pre-check → OVER_SIZE, File read, remote URL refused
+  (isRemoteUrl + readTextFromSource rejects /拒绝远程 URL/), source dispatch.
+NOT covered here (T011 scope): the 48 Golden fixtures, 200-seed property
+tests, Oracle cross-check, analyze()/Worker integration (T008/T010),
+UI editing/clearing behaviour (T009/T012). This file must not be quoted
+as "tests complete".
+
+## 10. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): src/core/compare.ts + src/io/* +
+  tests/core/t007-temp.test.ts + this log file + .gitignore one-liner.
+- Step 2 (handoff commit): task_handoffs/P029-T007.json only.
+- Real SHAs are recorded in task_handoffs/P029-T007.json (result_commit =
+  step-1 SHA) and in the final report.
+
+## 11. Open issues (non-blocking; no rollback was needed)
+- J-T007-1 (NOT_SUPPLIED '' vs undefined) and J-T007-4 (ragged rows
+  stricter than GFM spec) are judgement calls for T011 / final review to
+  confirm; each is a one-spot change in compare.ts if re-pinned.
+- WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).
+- No performance measurement was made in this card (p95 <=500ms on 32x12 is
+  a T012 gate); compare is a single linear pass over at most 64 KiB with no
+  I/O, but no timing claim is made here.
+- No contract conflict was found: T002's frozen types were sufficient
+  (CompareStatus used as-is); no baseline restore, no shortest-diff report
+  was needed. Two hand-arithmetic slips in the first test draft (CJK byte
+  total, §6.3 char total) were caught by the tests themselves and corrected
+  against real Node output before the green run — the implementation was
+  never at fault.

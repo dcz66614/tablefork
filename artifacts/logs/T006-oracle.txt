@@ -1,0 +1,619 @@
+# P029-T006 independent Python Oracle evidence log
+# Generated: 2026-11-21T00:55Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 5176582 (P029-T005-FIX-01).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T006 与核心隔离的独立 Python Oracle — oracle/reference.py,
+#        oracle/golden_expected.json (48 hand-computed expectations).
+
+## 1. Environment
+- python3 --version: Python 3.12.3
+- `python` does NOT exist on this VM (T001 ADR-02); every acceptance command
+  below uses `python3`, as the task card instructs.
+- git HEAD at start: 5176582; worktree clean except the coordinator files
+  S0_REPORT.md and COORDINATOR_LOG.md (untracked, untouched).
+- No external model API called; no Qoder; no password/key files touched.
+- WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).
+
+## 2. Independence statement (read / not-read lists)
+This oracle was written in a FRESH session whose only inputs were the
+written spec and the frozen contract. It is a different session from the
+TS core builders (T002–T005).
+
+READ (and only these):
+- docs/PROJECT_BOOK.md v1.0.1 (whole file; esp. sections 3, 5, 6, 7)
+- docs/IMPLEMENTATION_PLAN.md v1.0.1 (whole file; esp. 4.1–4.3, 6/T006, 9.1)
+- src/core/types.ts and src/core/index.ts (type shapes / constants ONLY)
+- task_handoffs/P029-T002.json and artifacts/logs/T002-contract.txt
+- artifacts/logs/T001-env.txt (python3-only note, T001 ADR-02)
+- artifacts/logs/T003-grid.txt section 7 ONLY (judgement calls J1–J8)
+- artifacts/logs/T004-flatten.txt section 7 ONLY (J-T004-1..5)
+- artifacts/logs/T005-witness.txt section 7 (hash semantics) and section 9
+  ONLY (J-T005-1..7)
+
+NOT READ (hard red line, honoured):
+- src/core/parse.ts, grid.ts, headers.ts, flatten.ts, witness.ts
+- tests/core/*.test.ts (any test file)
+- Any other section of T003/T004/T005 logs (no implementation details,
+  no code snippets, no test expectations, no sample matrices)
+- No T005 output was copied as expected values.
+
+The 48 expectations in oracle/golden_expected.json were HAND-COMPUTED by
+deriving slotOwner / cells / facts / F_origin / F_repeat / witness from the
+written rules slot by slot (see section 6 for the 12 seeds in full; the
+other 36 were derived the same way, in the same hand pass). They were
+written into the JSON file BEFORE reference.py was run against them.
+reference.py output was only ever used as a CHECK: where it disagreed with
+the hand derivation, the cause was investigated by hand and the side that
+was wrong was corrected with a written reason (see section 8 — three
+genuine hand errors were found this way, plus one serialisation-order
+convention fix). No expectation was ever back-filled from a program output.
+
+Hash fields (a_graph_sha256 / b_graph_sha256 / markdown_sha256) are the
+ONE mechanical exception, and only in the fingerprint sense: the graph
+content (cells + slotOwner) and the F strings are hand-written; a tiny
+throwaway script in /tmp (/tmp/t006-fill-hashes.py, NOT committed) computed
+SHA-256 over the canonical JSON of that hand-written content (key order
+id,row,col,rowSpan,colSpan,role,scope,text,section; compact separators;
+ensure_ascii=False, per T005 log section 7 / J-T005-4). The script imports
+neither reference.py nor any TS code and computes no semantics. After any
+later hand correction to b_cells (G28, see section 8) the filler was
+re-run so the hashes match the corrected hand content.
+
+## 3. Implemented functions (oracle/reference.py, 1098 lines, pure stdlib)
+Imports only: argparse, hashlib, json, re, sys, pathlib. No third-party
+packages, no Node/TS invocation, no reads of src/ (verified by grep:
+no "subprocess", no "os.system", no "node").
+
+- TableForkError(code, message) — structured carrier for the 7 codes.
+- decode_entities / normalize_text — only ';'-terminated references;
+  fixed table of common named entities + decimal/hex numeric refs; unknown
+  names stay literal; ASCII whitespace runs fold to one U+0020, trimmed at
+  edges; U+00A0 preserved (J6).
+- tokenize(html) — limited-subset scanner: start/end tags, text, comments;
+  bare "<" is literal text; "<!" / "<?" / self-closing / duplicate or
+  unclosed attributes are INVALID_RAGGED_GRID.
+- _check_cell_attrs / _parse_span — rowspan/colspan must be integers 1..8
+  (else INVALID_SPAN); headers= -> UNSUPPORTED_HEADER_SEMANTICS;
+  scope rowgroup/colgroup/unknown -> UNSUPPORTED_HEADER_SEMANTICS;
+  scope=row in thead / scope=col in tbody -> UNSUPPORTED_HEADER_SEMANTICS
+  (J3); scope on td row/col is ignored (scope=None).
+- parse_table(html) — stack parser with J5 implicit closes (td/th/tr/
+  section at the next structural boundary); EOF is not a boundary (any
+  open element -> INVALID_RAGGED_GRID); caption must close explicitly;
+  nested <table> (any depth) and a second top-level <table> ->
+  UNSUPPORTED_NESTED_TABLE (J2); out-of-subset elements, stray text,
+  misplaced structure, <html> wrappers, no <table>, empty table ->
+  INVALID_RAGGED_GRID (J1); bare <tr> under <table> is an implicit tbody
+  row; implicit tbody + explicit <tbody> -> INVALID_RAGGED_GRID (O4).
+- build_grid(rows) — first-free-column placement; span past the last DOM
+  row or across the thead/tbody boundary -> INVALID_SPAN (O2); covered-slot
+  collision -> INVALID_GRID_OVERLAP; rows>32 / DOM cells>128 -> OVER_SIZE;
+  total cols>12 -> OVER_SIZE (O3); any row not covered 0..ncols-1 ->
+  INVALID_RAGGED_GRID; ids c00.. sorted by (row, col, DOM order).
+- header_paths / build_facts / handover_lines — colPath from thead th
+  (top to bottom, non-empty, deduped by cellId); rowPath from tbody
+  scope=row th (left to right, continuation rows reuse the source id);
+  headerStatus KNOWN only when both paths are non-empty (J7); handover
+  lines per td-occupied slot in spec 5.4 form.
+- escape_cell / flatten — backslash first, then pipe; "| ... |" rows;
+  separator row after grid row 1 regardless of section; every line
+  LF-terminated, output ends with a single LF (J-T004-1).
+- canonical_graph / sha256_hex — {"rows","cols","cells","slotOwner"},
+  fixed key order, compact separators (J-T005-4).
+- serialize_alternative — this oracle's own canonical B serialisation:
+  compact, thead/tbody groups in grid order, rowspan/colspan only when
+  >1, scope only when present, & < > escaped in text (O6).
+- _split_candidate / find_witness — single-cell split; pieces keep
+  role/scope/section, span 1x1, text per strategy (J-T005-1/2); B with
+  >128 cells is skipped (J-T005-6); B is re-serialised and re-parsed and
+  the rebuilt graph must equal the constructed B graph; F(B) must equal
+  F(A) byte-for-byte and the graphs must differ; header change is a
+  per-slot row/col path text-array comparison (unknown never counts,
+  J-T005-5); selection order: header-changing first, then extra_slots
+  ascending, then origin row, col, id (spec 5.2).
+- analyse(html, strategy) — full expected-shape dict for both strategies.
+- compare_case / main — CLI: reads fixture JSON files, looks up the
+  hand-computed entry by fixture_id, verifies the fixture input matches
+  the entry's input, compares every field (error entries compare the
+  error CODE only; messages are worded independently), prints PASS/FAIL
+  per case with the first differing field, exits 0 iff all pass, 1 on any
+  FAIL, 2 on usage errors.
+
+## 4. Judgement calls made in THIS oracle (spec does not pin these down)
+O1. Unknown attributes on any element -> INVALID_RAGGED_GRID (strict
+    subset reading of spec 3.1; J1 buckets out-of-subset ELEMENTS, and
+    this oracle extends the bucket to out-of-subset attributes).
+    NOTE: no Golden fixture exercises this; it is a recorded divergence
+    risk for T011 / final review, not a silently settled fact.
+O2. A span reaching past the last DOM row, or across a thead/tbody
+    boundary -> INVALID_SPAN.
+O3. Error precedence: OVER_SIZE(bytes) -> parse errors in document order
+    -> OVER_SIZE(rows/DOM cells) -> INVALID_SPAN / INVALID_GRID_OVERLAP
+    during placement -> OVER_SIZE(cols) -> INVALID_RAGGED_GRID.
+O4. Grid rows follow DOM order of <tr>; bare <tr> under <table> is an
+    implicit tbody row; implicit tbody + explicit <tbody> in one table
+    is INVALID_RAGGED_GRID (two tbody groups).
+O5. Entity decoding: only ';'-terminated references; fixed table of
+    common named entities + numeric refs; unknown names stay literal;
+    U+00A0 is never folded or trimmed; only ASCII whitespace folds and
+    is trimmed at the edges.
+O6. alternativeHtml uses this oracle's own canonical serialisation
+    (attribute order rowspan, colspan, scope). The spec does not pin a
+    serialisation, so the alternativeHtml STRING is a known open point
+    for cross-implementation comparison; the B graph (b_cells +
+    b_slotOwner) is the comparable content. See also section 8, item 1.
+
+## 5. Acceptance commands (real output)
+### 5.1 Twelve frozen seeds (12/12, exit 0)
+Command: python3 oracle/reference.py --fixtures /tmp/t006-seeds --expected oracle/golden_expected.json
+Fixtures in /tmp/t006-seeds (NOT committed): G01, G03, G09, G10, G14,
+G17, G19, G25, G30, G33, G36, G42 — one or two per group, incl. the
+section 6.3 example (G09). Each fixture JSON was generated mechanically
+from the hand-written input in golden_expected.json (same ID, same input;
+T011 must take the 48 inputs from this file, not invent new ones).
+Verbatim output (final run, after the section 8 corrections):
+PASS G01
+PASS G03
+PASS G09
+PASS G10
+PASS G14
+PASS G17
+PASS G19
+PASS G25
+PASS G30
+PASS G33
+PASS G36
+PASS G42
+NOTE: expected entries not exercised by this fixture set: G02, G04, G05, G06, G07, G08, G11, G12, G13, G15, G16, G18, G20, G21, G22, G23, G24, G26, G27, G28, G29, G31, G32, G34, G35, G37, G38, G39, G40, G41, G43, G44, G45, G46, G47, G48
+12/12 passed (0 failed)
+Exit code: 0
+
+### 5.2 All 48 against the same hand-written expectations (48/48, exit 0)
+Command: python3 oracle/reference.py --fixtures /tmp/t006-all48 --expected oracle/golden_expected.json
+(/tmp/t006-all48 holds one fixture JSON per Golden ID, same generation
+method as the seeds.)
+Verbatim output (final run):
+PASS G01
+PASS G02
+PASS G03
+PASS G04
+PASS G05
+PASS G06
+PASS G07
+PASS G08
+PASS G09
+PASS G10
+PASS G11
+PASS G12
+PASS G13
+PASS G14
+PASS G15
+PASS G16
+PASS G17
+PASS G18
+PASS G19
+PASS G20
+PASS G21
+PASS G22
+PASS G23
+PASS G24
+PASS G25
+PASS G26
+PASS G27
+PASS G28
+PASS G29
+PASS G30
+PASS G31
+PASS G32
+PASS G33
+PASS G34
+PASS G35
+PASS G36
+PASS G37
+PASS G38
+PASS G39
+PASS G40
+PASS G41
+PASS G42
+PASS G43
+PASS G44
+PASS G45
+PASS G46
+PASS G47
+PASS G48
+48/48 passed (0 failed)
+Exit code: 0
+
+### 5.3 Fail-closed check (comparator is not vacuous)
+A tampered copy of the expectations (G01 f_origin replaced by "| WRONG |")
+was compared against the same 12 seeds:
+FAIL G01: f_origin: expected '| WRONG |\n', got '| A | B |\n| --- | --- |\n| C | D |\n'
+11/12 passed (1 failed) — exit code: 1. The tamper was detected with the
+exact differing field named.
+
+### 5.4 npm run oracle (NOT_RUN until T011)
+Command: npm run oracle  (=> python3 oracle/reference.py --fixtures
+fixtures/golden --expected oracle/golden_expected.json)
+Result: "fixtures directory not found: fixtures/golden", exit code 2.
+fixtures/golden/ does not exist yet — T011 creates it from this file's
+inputs. This is NOT a failure of the oracle.
+
+### 5.5 Compile check
+python3 -m py_compile oracle/reference.py — OK (no output, exit 0).
+sha256sum (at commit time; see handoff for the committed values):
+oracle/reference.py 3a7119c71ac8aa9b36264af3e3d1f9882276ed5e58a95a463a2d648356fe4118
+oracle/golden_expected.json 4d1af6a0bd89f2e4e1ae528b4ea07a63c7c17ba9eab82ea7a05f6fa41e54a5ad
+(these were the pre-commit working-tree hashes; the committed file hashes
+are identical unless the file changed between hashing and committing —
+the handoff records the real result_commit SHA.)
+
+## 6. The 12 seed hand derivations (complete)
+Notation: cells are listed as id (row,col) role scope span text section;
+slotOwner rows are lists of cell ids; F strings are shown with \n as LF.
+Header paths are per slot: colPath(x) from thead th top-to-bottom deduped
+by cellId; rowPath(r) from tbody scope=row th left-to-right with
+continuation reuse. headerStatus is KNOWN only when both paths non-empty.
+
+### G01 — plain 2x2, tbody only, ORIGIN_EMPTY
+Input: <table><tbody><tr><td>A</td><td>B</td></tr><tr><td>C</td><td>D</td></tr></tbody></table>
+Placement (first free column per row): c00 (0,0) TD A; c01 (0,1) TD B;
+c02 (1,0) TD C; c03 (1,1) TD D. No spans, no headers.
+slotOwner [[c00,c01],[c02,c03]]. All facts: rowHeaders [], colHeaders [],
+UNKNOWN, value = cell text.
+F_origin = F_repeat = "| A | B |\n| --- | --- |\n| C | D |\n" (separator
+after grid row 1; single trailing LF).
+Handover (td slots): R0C0 A, R0C1 B, R1C0 C, R1C1 D, all "? / ?".
+Witness both strategies: NO_WITNESS_FOUND, reason "no merged cells".
+
+### G03 — thead + scope=row row headers, ORIGIN_EMPTY
+Input: thead [项目, 值]; tbody rows [th scope=row 甲, td 10],
+[th scope=row 乙, td 20].
+Cells: c00 (0,0) TH 项目 thead; c01 (0,1) TH 值; c02 (1,0) TH 甲
+scope=row tbody; c03 (1,1) TD 10; c04 (2,0) TH 乙 scope=row; c05 (2,1)
+TD 20. slotOwner [[c00,c01],[c02,c03],[c04,c05]].
+colPath(0)=[项目], colPath(1)=[值]; rowPath(0)=[], rowPath(1)=[甲],
+rowPath(2)=[乙].
+Facts: (1,1) row [甲] col [值] KNOWN 10; (2,1) row [乙] col [值] KNOWN
+20; (1,0)/(2,0) KNOWN with their own header text as value; header-row
+slots UNKNOWN (row path empty).
+F both = "| 项目 | 值 |\n| --- | --- |\n| 甲 | 10 |\n| 乙 | 20 |\n".
+Handover: [R1C1] 行标题: 甲 | 列标题: 值 | 数值: 10; [R2C1] 乙/值/20.
+Witness both: NO_WITNESS_FOUND ("no merged cells").
+
+### G09 — project book section 6.3 example, ORIGIN_EMPTY
+Input: thead row0 [th rowspan=2 产品, th colspan=2 2026预算], row1
+[th 收入, th 成本]; tbody row2 [td A, td 120, td 80].
+Placement: row0: 产品 at (0,0) rowspan 2; 2026预算 at (0,1) colspan 2.
+Row1: first free column is 1 (col 0 held by 产品) -> 收入 (1,1),
+成本 (1,2). Row2: A (2,0), 120 (2,1), 80 (2,2).
+Cells: c00 产品 (0,0) 2x1 TH thead; c01 2026预算 (0,1) 1x2 TH;
+c02 收入 (1,1); c03 成本 (1,2); c04 A (2,0) TD; c05 120 (2,1);
+c06 80 (2,2). slotOwner [[c00,c01,c01],[c00,c02,c03],[c04,c05,c06]].
+colPath(0): row0 产品; row1 产品 again, same cellId -> dedup -> [产品].
+colPath(1): [2026预算, 收入]. colPath(2): [2026预算, 成本].
+rowPath all [] (tbody row has no scope=row th) -> all facts UNKNOWN.
+F_origin: row0 "| 产品 | 2026预算 |  |" (extension slot of c01 blank);
+row1 "|  | 收入 | 成本 |" (extension of c00 blank); row2 "| A | 120 | 80 |";
+separator after row0; trailing LF. F_repeat: "| 产品 | 2026预算 |
+2026预算 |" / "| 产品 | 收入 | 成本 |" / "| A | 120 | 80 |".
+Handover: [R2C0] ? / 产品 / A; [R2C1] ? / 2026预算 > 收入 / 120;
+[R2C2] ? / 2026预算 > 成本 / 80.
+Witness ORIGIN_EMPTY: candidates c00 (extra 1), c01 (extra 1). Split
+c01 -> pieces 2026预算, "": colPath(2) becomes [成本] (was [2026预算,
+成本]) -> header-changing. Split c00 -> pieces 产品, "": colPath(0)
+stays [产品] (empty piece skipped) -> NOT header-changing. Header-
+changing first -> c01, cost 1, HEADER_ASSOCIATION_CHANGED. B: thead
+row0 [产品 rowspan=2, 2026预算, ""], row1 [收入, 成本]; F(B) ==
+F(A) byte-for-byte (checked). Witness REPEAT_VALUE: split c00 ->
+pieces 产品, 产品: colPath(0) becomes [产品, 产品] (different cellIds,
+dedup is by id not text, J-T005-7) -> header-changing. Split c01 ->
+pieces 2026预算, 2026预算: colPath(2) stays [2026预算, 成本] -> NOT
+header-changing. Select c00, cost 1, HEADER_ASSOCIATION_CHANGED.
+
+### G10 — colspan=3 header group, REPEAT_VALUE
+Input: thead row0 [th colspan=3 全年], row1 [一月, 二月, 三月];
+tbody [1, 2, 3].
+Cells: c00 全年 (0,0) 1x3; c01 一月 (1,0); c02 二月; c03 三月;
+c04 1 (2,0); c05 2; c06 3. slotOwner [[c00,c00,c00],[c01,c02,c03],
+[c04,c05,c06]]. colPath(0)=[全年,一月], (1)=[全年,二月],
+(2)=[全年,三月]; rowPath [].
+F_origin: "| 全年 |  |  |\n| --- | --- | --- |\n| 一月 | 二月 | 三月 |\n|
+1 | 2 | 3 |\n". F_repeat: first row "| 全年 | 全年 | 全年 |", rest same.
+Witness ORIGIN_EMPTY: only c00 (extra 2). Split -> 全年,"","":
+colPath(1) becomes [二月] -> header-changing. Source c00, cost 2,
+HEADER_ASSOCIATION_CHANGED. Witness REPEAT_VALUE: pieces all 全年:
+colPath(1) stays [全年,二月] -> structural only. Source c00, cost 2,
+STRUCTURAL_COLLISION.
+
+### G14 — two colspan groups, cost ordering, REPEAT_VALUE
+Input: thead row0 [th colspan=2 组一, th colspan=3 组二], row1
+[a, b, c, d, e]; tbody [1, 2, 3, 4, 5].
+Cells: c00 组一 (0,0) 1x2; c01 组二 (0,2) 1x3; c02..c06 a..e;
+c07..c11 1..5. slotOwner [[c00,c00,c01,c01,c01],[c02,c03,c04,c05,c06],
+[c07,c08,c09,c10,c11]]. colPath(0)=[组一,a], (1)=[组一,b],
+(2)=[组二,c], (3)=[组二,d], (4)=[组二,e]; rowPath [].
+F_origin: "| 组一 |  | 组二 |  |  |\n| --- | --- | --- | --- | --- |\n|
+a | b | c | d | e |\n| 1 | 2 | 3 | 4 | 5 |\n". F_repeat: "| 组一 | 组一 |
+组二 | 组二 | 组二 |" + same lower rows.
+Witness ORIGIN_EMPTY: c00 (extra 1) and c01 (extra 2) are both header-
+changing (splitting removes the group text from extension columns);
+smaller extra wins -> c00, cost 1, HEADER_ASSOCIATION_CHANGED.
+Witness REPEAT_VALUE: neither is header-changing (repeated group text
+restores the paths); smaller extra wins -> c00, cost 1,
+STRUCTURAL_COLLISION.
+
+### G17 — TFK-B style scope=row rowspan=2, ORIGIN_EMPTY
+Input: thead [部门, 项目]; tbody row1 [th scope=row rowspan=2 研发,
+td 甲], row2 [td 乙].
+Cells: c00 部门; c01 项目; c02 研发 (1,0) 2x1 scope=row; c03 甲 (1,1);
+c04 乙 (2,1). slotOwner [[c00,c01],[c02,c03],[c02,c04]].
+colPath(0)=[部门], (1)=[项目]; rowPath(0)=[], rowPath(1)=[研发],
+rowPath(2)=[研发] (continuation reuses c02, no duplicate text).
+Facts: (1,0)/(1,1)/(2,0)/(2,1) KNOWN; header row UNKNOWN.
+F_origin: "| 部门 | 项目 |\n| --- | --- |\n| 研发 | 甲 |\n|  | 乙 |\n".
+F_repeat: last row "| 研发 | 乙 |".
+Witness ORIGIN_EMPTY: only c02 (extra 1). Split -> 研发, "" (empty th
+scope=row): rowPath(2) becomes [] -> header-changing. Source c02,
+cost 1, HEADER_ASSOCIATION_CHANGED. Witness REPEAT_VALUE: pieces both
+研发: rowPath(2) stays [研发] as a text array -> NOT header-changing.
+Source c02, cost 1, STRUCTURAL_COLLISION.
+
+### G19 — thead rowspan=2, ORIGIN_EMPTY
+Input: thead row0 [th rowspan=2 类, th 子], row1 [th 细]; tbody [v, w].
+Cells: c00 类 (0,0) 2x1 TH; c01 子 (0,1); c02 细 (1,1); c03 v (2,0);
+c04 w (2,1). slotOwner [[c00,c01],[c00,c02],[c03,c04]].
+colPath(0)=[类] (dedup by cellId), colPath(1)=[子,细]; rowPath [].
+F_origin: "| 类 | 子 |\n| --- | --- |\n|  | 细 |\n| v | w |\n".
+F_repeat: "| 类 | 子 |\n| --- | --- |\n| 类 | 细 |\n| v | w |\n".
+Witness ORIGIN_EMPTY: only c00 (extra 1). Split -> 类, "": colPath(0)
+stays [类] (empty piece skipped) -> NOT header-changing. Source c00,
+cost 1, STRUCTURAL_COLLISION. Witness REPEAT_VALUE: pieces 类, 类:
+colPath(0) becomes [类, 类] -> header-changing (same J-T005-7
+mechanism as G09). Source c00, cost 1, HEADER_ASSOCIATION_CHANGED.
+
+### G25 — header-changing big candidate beats small structural one, ORIGIN_EMPTY
+Input: thead row0 [th colspan=3 总], row1 [a, b, c]; tbody row2
+[td rowspan=2 左, 1, 2], row3 [3, 4].
+Cells: c00 总 (0,0) 1x3; c01 a; c02 b; c03 c; c04 左 (2,0) 2x1;
+c05 1; c06 2; c07 3 (3,1); c08 4 (3,2).
+slotOwner [[c00,c00,c00],[c01,c02,c03],[c04,c05,c06],[c04,c07,c08]].
+colPath(0)=[总,a], (1)=[总,b], (2)=[总,c]; rowPath [].
+F_origin: "| 总 |  |  |\n| --- | --- | --- |\n| a | b | c |\n| 左 |
+1 | 2 |\n|  | 3 | 4 |\n". F_repeat: first row all 总; row3 "| 左 | 3 | 4 |".
+Witness ORIGIN_EMPTY: c00 (extra 2, header-changing: split makes
+colPath(1)=[b], colPath(2)=[c]) vs c04 (extra 1, structural: splitting
+a td changes no path). Header-changing wins over the smaller cost ->
+c00, cost 2, HEADER_ASSOCIATION_CHANGED. Witness REPEAT_VALUE: c00
+is NOT header-changing (repeated 总 restores paths); both structural;
+smaller extra wins -> c04, cost 1, STRUCTURAL_COLLISION.
+
+### G30 — colspan header + rowspan row header, ORIGIN_EMPTY
+Input: thead row0 [th colspan=2 上], row1 [左, 右]; tbody row2
+[th scope=row rowspan=2 行组, td 1], row3 [td 2].
+Cells: c00 上 (0,0) 1x2; c01 左 (1,0); c02 右 (1,1); c03 行组 (2,0)
+2x1 scope=row; c04 1 (2,1); c05 2 (3,1).
+slotOwner [[c00,c00],[c01,c02],[c03,c04],[c03,c05]].
+colPath(0)=[上,左], (1)=[上,右]; rowPath(2)=[行组], rowPath(3)=[行组].
+Facts: (2,1)/(3,1) KNOWN (row 行组, col 上>右); (2,0)/(3,0) KNOWN.
+F_origin: "| 上 |  |\n| --- | --- |\n| 左 | 右 |\n| 行组 | 1 |\n|  |
+2 |\n". F_repeat: "| 上 | 上 |\n| --- | --- |\n| 左 | 右 |\n| 行组 |
+1 |\n| 行组 | 2 |\n".
+Witness ORIGIN_EMPTY: c00 (extra 1, header-changing: colPath(1) ->
+[右]) and c03 (extra 1, header-changing: rowPath(3) -> []). Both
+header-changing, both extra 1 -> tie broken by origin row: c00 at row
+0 first. Source c00, cost 1, HEADER_ASSOCIATION_CHANGED. Witness
+REPEAT_VALUE: neither is header-changing (repeated 上 / repeated 行组
+restore the text arrays); both structural, extra 1, tie by row -> c00,
+cost 1, STRUCTURAL_COLLISION.
+
+### G33 — pipe / backslash escaping (order-sensitive), ORIGIN_EMPTY
+Input cells (raw text): "a|b", "c\d", "e\|f", "g" (2x2, no merges).
+Escape rule (spec 5.1): backslash FIRST, then pipe. "a|b" -> "a\|b";
+"c\d" -> "c\\d" (one backslash becomes two); "e\|f": backslash pass ->
+"e\\|f", pipe pass -> "e\\\|f" (three backslashes + escaped pipe).
+F (both strategies, no merges): "| a\|b | c\\d |\n| --- | --- |\n|
+e\\\|f | g |\n". Handover carries the RAW values (a|b, c\d, e\|f, g).
+Witness both: NO_WITNESS_FOUND ("no merged cells").
+
+### G36 — whitespace folding + trim, ORIGIN_EMPTY
+Input (literal newlines/tabs inside cells): cell (0,0) raw
+"  多   空\n格\t表  "; (0,1) "第二"; (1,0) "\n前后\n"; (1,1) "  x  ".
+Normalisation (spec 3.1): consecutive ASCII whitespace folds to one
+U+0020, edges trimmed -> "多 空 格 表", "第二", "前后", "x".
+F both = "| 多 空 格 表 | 第二 |\n| --- | --- |\n| 前后 | x |\n".
+Witness both: NO_WITNESS_FOUND ("no merged cells").
+
+### G42 — overlap rejection, ORIGIN_EMPTY
+Input: <table><tbody><tr><td>A</td><td rowspan="2">B</td></tr>
+<tr><td colspan="2">C</td></tr></tbody></table>
+Placement: row0: A at (0,0); B at (0,1) spanning rows 0-1, col 1.
+Row1: first free column is 0 (col 1 held by B); C at (1,0) colspan=2
+covers (1,0) and (1,1); (1,1) is already occupied by B ->
+INVALID_GRID_OVERLAP. Expected error code: INVALID_GRID_OVERLAP.
+(No slotOwner / cells / F / witness: the input is rejected.)
+
+## 7. The other 36 expectations (same hand method, summarised)
+G02 (thead + 1 data row, no merges): slotOwner [[c00,c01],[c02,c03]];
+colPaths [名称],[数量]; F both "| 名称 | 数量 |\n| --- | --- |\n| 苹果 |
+3 |\n"; no witness. G04 (empty header + empty data): colPath(0)=[]
+(empty th skipped); F "|  | 值 |\n| --- | --- |\n|  | 5 |\n"; no
+witness. G05 (1x1): F "| 唯一 |\n| --- |\n"; no witness. G06
+(thead only): F "| 甲 | 乙 |\n| --- | --- |\n"; handover []; no witness.
+G07 (tbody scope=row only, no thead): rowPaths [行一],[行二], colPaths
+empty; F "| 行一 | 7 |\n| --- | --- |\n| 行二 | 8 |\n"; no witness.
+G08 (thead th without scope IS a column header; tbody th without scope
+is NOT a row header): colPaths [列A],[列B], rowPath(1)=[]; F
+"| 列A | 列B |\n| --- | --- |\n| 伪行头 | 9 |\n"; no witness.
+G11 (tbody td colspan=2): only candidate c00, structural both strategies,
+cost 1. G12 (colspan in 2nd row): only c04, structural, cost 1. G13
+(two colspan td, extra 2 vs 1): smaller extra wins -> c01, cost 1,
+structural both. G15 (empty colspan source): F_origin == F_repeat ==
+"|  |  | Z |\n| --- | --- |\n| p | q | r |\n"; c00, cost 1,
+structural both. G16 (thead td colspan=2 is not a header): colPaths
+[],[],[标题]; c00 structural cost 1 both; handover has FIVE lines —
+the thead td slots (0,0),(0,1) are td-occupied slots too (see section 8).
+G18 (rowspan=3): c00 extra 2, structural both. G20 (rowspan td between
+scope=row ths): c01 extra 1, structural both (splitting a td changes no
+path). G21 (empty scope=row rowspan=2): rowPaths empty both rows; c00
+extra 1, structural both. G22 (rowspan in 2nd column): c04 extra 1,
+structural both. G23 (2x2 span): c00 extra 3, structural both. G24
+(rowspan th scope=row + rowspan td, same extra 1): ORIGIN_EMPTY picks
+c03 (header-changing: rowPath(2) -> []) over c04 (structural); REPEAT
+picks c03 too (both structural now, tie by col 0 < 1). G26 (2x2 thead
+cell): c00 extra 3, header-changing BOTH strategies (ORIGIN: colPath(1)
+-> []; REPEAT: colPath(1) -> [双,双]). G27 (two colspan=2, tie by col):
+c00 at (0,0) wins, cost 1, structural both. G28 (two rowspan=2, tie by
+row): c00 at row 0 wins, cost 1, structural both; B row 3 has only the
+single DOM cell d (see section 8). G29 (2x2 header + rowspan td):
+ORIGIN and REPEAT both pick c00, cost 3, header-changing (REPEAT:
+colPath(1) -> [组,组]). G31 (three candidates): ORIGIN picks c04
+(header-changing, extra 1) over c00 (header-changing, extra 2) and c06
+(structural); REPEAT picks c04 (all structural, extra 1, tie by col).
+G32 (mid-table colspan): c04 extra 1, structural both. G34 (CJK +
+emoji + full-width): F "| 中文测试 | 😀笑 |\n| --- | --- |\n| 全角ＡＢ |
+123 |\n"; no witness. G35 (entities): "&amp;" -> "&", "&lt;" -> "<",
+"&quot;" -> '"', "&#65;&#x42;" -> "AB", "&foo;" stays literal, "&amp"
+(without ';') stays literal; F "| A & B | 1 < 2 |\n| --- | --- |\n|
+\"引\" AB | x &foo; y &amp z |\n"; no witness. G37 (&nbsp; preserved
+as U+00A0; numeric-looking text stays a string): cell (0,0) "a\u00a0b";
+F "| a\u00a0b | 007 |\n| --- | --- |\n| 12345678901234567 | 1e5 |\n";
+no witness. G38 (only \ and | are escaped): "*粗* `码` #题" and
+"it's \"q\"" pass through unchanged; no witness. G39 (escaped text in
+a colspan header): ORIGIN picks c00 header-changing (colPath(1) -> []);
+REPEAT picks c00 structural; escaped header text "A\|B\\C". G40
+(entity in a scope=row rowspan header): ORIGIN picks c02
+header-changing (rowPath(2) -> []); REPEAT picks c02 structural.
+G41 nested table -> UNSUPPORTED_NESTED_TABLE. G43 short row ->
+INVALID_RAGGED_GRID. G44 rowspan=9 -> INVALID_SPAN. G45 headers=
+attribute -> UNSUPPORTED_HEADER_SEMANTICS. G46 scope=rowgroup ->
+UNSUPPORTED_HEADER_SEMANTICS. G47 thead rowspan crossing into tbody ->
+INVALID_SPAN (O2). G48 13 columns -> OVER_SIZE.
+
+## 8. Discrepancies found during comparison, and how each was resolved
+All three were investigated by hand against the written spec; in each
+case the hand derivation (not the program) was the side in error, except
+item 1 which was a serialisation-order convention. Nothing was silently
+adjusted to match a program output.
+
+1. alternativeHtml attribute order (G30, found on the first 12-seed run,
+   11/12). Hand-written B HTML used `<th scope="row" rowspan="2">`;
+   reference.py serialises rowspan, colspan, scope in that order
+   (`<th rowspan="2" scope="row">`). The spec does not pin an attribute
+   order, so this is a convention choice, not a semantic difference.
+   Resolution: adopted the serializer's order (rowspan, colspan, scope)
+   as the oracle's canonical order (recorded as O6) and rewrote the two
+   affected altHtml strings (G30, both strategies). A blanket
+   search-replace also touched six INPUT html strings (G17/G21/G24/G30/
+   G31/G40 — attribute order in an input is semantically irrelevant to
+   parsing, but the change made the fixtures disagree with the golden
+   inputs); those six were reverted to the originally hand-written
+   order, and the /tmp fixtures were regenerated. Lesson recorded: never
+   blanket-replace across input and output fields.
+2. G16 handover incomplete (found on the first 48/48 run: "handover:
+   length differs (expected 3, got 5)"). My hand list had only the three
+   tbody td slots and missed the two thead td slots (0,0) and (0,1),
+   whose owner is a td ("非标题"). Spec 5.4 says "对每个 td 占用的槽位"
+   with no section qualifier, so the oracle's five lines are correct.
+   Resolution: hand list corrected to five lines (two thead td lines
+   added). This was a genuine hand error, caught by the oracle.
+3. G28 B construction — phantom continuation cell (found on the first
+   48/48 run, after item 1 was fixed). My hand-written B for G28 listed
+   an 8th cell "" at (3,0) and altHtml `<tr><td></td><td>d</td></tr>`
+   for the last row. By hand re-derivation: the split candidate is c00
+   (上, rows 0-1); the OTHER rowspan cell 下 (rows 2-3) is untouched,
+   so slot (3,0) is still owned by 下 and is NOT a DOM cell — row 3 has
+   only the single DOM cell d. Resolution: b_cells corrected to 7 cells
+   (d is c06 at (3,1)), b_slotOwner row 3 corrected to [c04, c06],
+   altHtml last row corrected to `<tr><td>d</td></tr>` for both
+   strategies, and the hash filler re-run (b_graph_sha256 follows from
+   the corrected b_cells). Genuine hand error, caught by the oracle.
+   I also re-audited every other fixture's B for the same error class
+   (untouched rowspan cell whose continuation slot I might have written
+   as a DOM cell): G09/G24/G25/G29/G30/G31 all check out — their B rows
+   emit only DOM cells, with continuations correctly omitted.
+
+## 9. Open issues (non-blocking; for T011 / final review)
+- O1 (unknown attributes -> INVALID_RAGGED_GRID) has no Golden
+  coverage; if the TS core ignores unknown attributes instead, T011's
+  cross-check will surface a divergence. Needs a final-review ruling,
+  not a silent change here.
+- O6 (alternativeHtml serialisation is not pinned by the spec): the
+  oracle's canonical form is documented in reference.py; if T011
+  compares alternativeHtml strings across implementations, the two
+  serialisers must first be aligned, or comparison must be structural
+  (re-parse B and compare graphs — which this oracle already does
+  internally for every candidate).
+- Error-code precedence (O3) and the span-past-last-row rule (O2) are
+  this oracle's readings where the spec lists the codes but not their
+  priority; G41–G48 cover one code each, not priority conflicts.
+- The 128-cell cap interaction (J-T005-6: a legal A at the cap yields
+  B tables over the cap, all candidates skipped -> NO_WITNESS_FOUND)
+  is implemented in find_witness but has no Golden fixture (a 128-cell
+  table would bloat the file); T011's property tests should cover it.
+- Performance: no timing claim is made here (p95 <= 500ms on 32x12 is
+  a T012 gate); the oracle re-parses B once per candidate, which is
+  fine for 48 fixtures but is not a performance statement.
+- npm run oracle is NOT_RUN until T011 creates fixtures/golden/
+  (see 5.4). The 12 seed fixtures live in /tmp/t006-seeds and the
+  48-fixture set in /tmp/t006-all48; neither is committed.
+
+## 10. Files produced by this task (only these)
+- oracle/reference.py (new; 1098 lines)
+- oracle/golden_expected.json (new; 48 fixtures, spec 1.0.1)
+- artifacts/logs/T006-oracle.txt (this file)
+- task_handoffs/P029-T006.json (second commit, see below)
+
+## 11. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): oracle/reference.py + oracle/golden_expected.json
+  + this log file.
+- Step 2 (handoff commit): task_handoffs/P029-T006.json only.
+- Real SHAs are recorded in task_handoffs/P029-T006.json (result_commit =
+  step-1 SHA) and in the final report to the parent agent.
+
+## 12. 勘误附录（P029-T011-FIX-01，2026-11-21）
+
+本附录为追加记录，不改写上文任何内容。T011 对照发现本 Oracle 与 TS
+在两处分歧，协调员复现确认为真；裁决按 Sam 2026-11-18 授权（这类规格
+决策 Muse 按自己推荐定）作出，两处均为 Oracle 错、TS 对。
+
+### 勘误 (A)：facts 定 TD-only——build_facts 改为只对 td 占用的槽位出记录
+
+- 原行为：build_facts 对每个槽都出一条（含 th 槽；G02 为 4 条
+  [c00..c03]）；且本 Oracle 自身的 handover 已是 TD 过滤
+  （handover_lines 只取 role == "TD" 的槽），facts 与 handover
+  内部不一致。
+- 改后：build_facts 跳过 role != "TD" 的槽（与 handover_lines 已用的
+  同一 TD 过滤一致）；G02 的 facts 为 2 条 [c02, c03]，与 handover
+  行数一致。
+- 理由（规格原文）：项目书 §5.4“对每个 td 占用的槽位，稳定序列化”；
+  交接稿由 facts 生成，facts 含 th 槽会让交接稿出现标题格行，与 §5.4
+  矛盾。
+- 连带：oracle/golden_expected.json 各条 facts 数组删 th 槽条目
+  （共 99 条，24 条 fixtures；其余字段一字未动，handover 本来就是
+  TD-only，未动）。指纹字段无需重填：a_graph_sha256 /
+  b_graph_sha256 / markdown_sha256 的输入分别是 cells+slotOwner、
+  B 图、F 字符串，均不含 facts——已用独立脚本（/tmp 脚本，不提交）
+  按 T006 §2 的办法重算全部 212 个哈希字段（160 个 a 图/ F 哈希 +
+  52 个 B 图哈希），改前改后均为 0 不匹配。
+
+### 勘误 (B)：未知属性忽略——解析器不再拒绝未知属性
+
+- 原行为（本文 §4 O1）：任何不在 _CELL_ATTRS 里的属性报
+  INVALID_RAGGED_GRID；`<td data-x>`、`<table class>`、`<td style>`
+  均被拒。O1 原文（§4）自此作废，以本附录为准。
+- 改后：删 _check_cell_attrs 的未知属性拒绝循环与 table / thead /
+  tbody / caption / tr 的表级属性拒绝；未知属性解析后丢弃。
+  保留：rowspan/colspan 解析与 1–8 校验（INVALID_SPAN）、scope 取值
+  校验（row/col 合格；rowgroup/colgroup/非法值报
+  UNSUPPORTED_HEADER_SEMANTICS）、headers 属性报
+  UNSUPPORTED_HEADER_SEMANTICS。其他解析/网格/标题/F/见证逻辑未动。
+- 理由（规格原文）：项目书 §3.1“有效标签”只限标签
+  （table/thead/tbody/tr/th/td/caption），未给属性设限；有语义的
+  属性只有 rowspan/colspan/scope/headers（其中 headers 与
+  scope=rowgroup/colgroup 按 §3.1 报 UNSUPPORTED_HEADER_SEMANTICS）；
+  T003 的 J1 管的是超集元素，Oracle 把它扩展到属性是自己的选择
+  （见本文 §4 O1 原文）；§3.1“格式处理”明说格式是丢弃不是拒绝；
+  拒 class/style/data-* 会让工具拒掉几乎所有真实粘贴表，与工具用途
+  相悖；属性不渲染，无安全角度。
+- 验收：O1 三例在 TS 与 Oracle 两侧均接受，headers 仍两侧同码拒绝
+  （见 artifacts/logs/T011-FIX-01.txt §5）；`npm run oracle` 仍 48/48。

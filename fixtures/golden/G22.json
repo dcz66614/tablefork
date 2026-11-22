@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G22",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>H1</th><th>H2</th><th>H3</th></tr></thead><tbody><tr><td>a</td><td rowspan=\"2\">中</td><td>c</td></tr><tr><td>d</td><td>e</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G22"
+}

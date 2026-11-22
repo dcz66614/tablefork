@@ -1,0 +1,94 @@
+P029-FIX-04 — 对齐 TS 与 Oracle 的垂直制表符（U+000B，\v）空白处理
+====================================================================
+任务：P029 TableFork 终审修复卡 FIX-04（ISSUE-FIX03-03 的裁决后续）
+基线：HEAD a73613c（FIX-03 已合入；typecheck 0、test:core 739/739、oracle 49/49）
+执行：FIX-04 执行员（子代理），2026-11-21 ~11:12–11:20 GMT
+结果：PASS（全部验收退出码 0）
+
+§1. 核查：Oracle 是否确实含 \v（先核查，后动手）
+------------------------------------------------------
+oracle/reference.py:179：
+    _ASCII_WS_RUN = re.compile(r"[ \t\n\r\f\v]+")
+oracle/reference.py:183–189 normalize_text：
+    folded = _ASCII_WS_RUN.sub(" ", decoded)
+    return folded.strip(" \t\n\r\f\v")
+结论：Oracle 的折叠正则与 strip 集合都含 \v。核查确认后 oracle/reference.py
+一字未动（本卡只改 TS 一侧）。
+
+修前 TS（src/core/parse.ts normalizeCellText）：
+    .replace(/[ \t\n\f\r]+/g, ' ')
+    .replace(/^[ \t\n\f\r]+|[ \t\n\f\r]+$/g, '')
+结论：TS 折叠与 trim 字符集均为 [ \t\n\f\r]，漏 \v——与 Oracle 不一致，
+含 \v 的单元格两侧会分歧（例：'\vhello\v'：TS 得 '\vhello\v'，Oracle 得 'hello'）。
+
+§2. 修复（仅两个正则的字符集 + 注释）
+---------------------------------------
+src/core/parse.ts normalizeCellText：
+    .replace(/[ \t\n\f\r\v]+/g, ' ')
+    .replace(/^[ \t\n\f\r\v]+|[ \t\n\f\r\v]+$/g, '')
+文件头裁决 5 的注释同步更新：ASCII 空白列举补“垂直制表符”，并注明 FIX-04
+与 Oracle "[ \t\n\r\f\v]" 完全一致。normalizeCellText 上方的 JSDoc 原已写
+Oracle .strip(" \t\n\r\f\v") 口径（FIX-03 留下），修后名副其实，无需改动。
+
+规格口径：\v 属 ASCII 空白，与 PROJECT_BOOK.md §3.1 "ASCII 空白"一致——
+无需改规格、无需改 docx、无需改 bundle、无需 Drive 操作、无需新增 Golden。
+
+§3. 回归测试（tests/core/nbsp.test.ts，新增 6 用例）
+------------------------------------------------------
+新增 describe 'normalizeCellText folds/trims U+000B vertical tab (FIX-04)'：
+1. 首尾 \v 被 trim：'\vx\v' → 'x'；'\v\v\vx\v\v' → 'x'；混合空格/\v 首尾 → 'x'
+2. 单元格内连续 \v 折叠为一个 U+0020：'a\v\vb' → 'a b'；'a\v b'；
+   'a \v\t\v b' → 'a b'（\v 与其他 ASCII 空白混跑同折）
+3. 纯 \v 单元格归空：'\v\v' → ''；' \t\v\n\r\f ' → ''
+4. FIX-03 不变：'\v\u00A0x\u00A0\v' → '\u00A0x\u00A0'（\v 去掉，NBSP 保留）；
+   'a\v\u00A0b' → 'a \u00A0b'
+5. 数值引用 &#11; 解码后同样处理：'&#11;x&#11;' → 'x'；'a&#11;&#11;b' → 'a b'
+6. 端到端：'<td>\vhello\v\vworld\v</td>' 解析后 cell text 为 'hello world'
+
+§4. TS ↔ Oracle 规范化一致性核对（一次性脚本，不入仓）
+--------------------------------------------------------
+脚本：.tmp-tmpdir/repro_vt.ts（TS normalizeCellText）与
+      .tmp-tmpdir/repro_vt.py（Python Oracle normalize_text）
+      ——与 FIX-03 的 repro_nbsp.* 同一做法；原始输出存于
+      .tmp-tmpdir/vt_ts.txt / vt_py.txt（JS JSON.stringify 与 Python repr
+      的转义写法不同，逐行语义比对后一致）。
+16 组含 \v 输入（首尾 \v、连续 \v、\v 与其他 ASCII 空白混跑、纯 \v、
+\v+NBSP 混用、&#11; 引用、端到端文本、纯 \v、对照组无 \v 文本、
+NBSP+\v+NBSP），两侧规范化结果 16/16 完全一致，mismatches: 0。
+代表性结果：
+  '\vx\v' → 'x'；'a\v\vb' → 'a b'；'\v\u00A0x\u00A0\v' → '\u00A0x\u00A0'；
+  '\u00A0\v\u00A0' → '\u00A0 \u00A0'；'&#11;x&#11;' → 'x'。
+
+§5. 验收（全部退出码 0；TMPDIR=~/workspace/p029-tablefork/.tmp-tmpdir）
+-----------------------------------------------------------------------
+- npm run typecheck        exit 0（tsc --noEmit，无输出）
+- npm run test:core         exit 0，745/745，11 files（739 既有 + 6 新增 \v 用例；
+                           nbsp.test.ts 13 tests；含 200-seed cross-check）
+- npm run oracle            exit 0，49/49 passed（0 failed，含 G49）
+- npm run test:e2e           exit 0，22 passed（32.0s）
+- npm run test:e2e:perf      exit 0，1 passed（19.0s）
+- npm run build             exit 0，built in 1.81s；
+                           Worker chunk dist/assets/tablefork.worker-CnACUpDX.js 25.39 kB
+- TS↔Oracle \v 核对         16/16 一致（见 §4）
+- verify:release            本卡未跑（见 §6 D1）
+
+注：test:e2e 运行中改写了 artifacts/logs/T012-*.json 与
+artifacts/screenshots/T012-*.png（性能日志时间戳与截图像素微差，属 e2e
+运行副作用，与本卡无关），已用 git checkout 恢复，未入提交。
+
+§6. 遗留项（D1–D2）
+-------------------
+D1. verify:release 未跑：review/RELEASE_MANIFEST.json 是旧冻结清单
+    （基线 4025061，spec 1.0.1），跑了也会因与冻结不符而失败，与本卡无关；
+    重冻结卡再跑。——沿用 FIX-03 的 ISSUE-FIX03-01 口径。
+D2. 其余 Oracle 差异继续携带，不在本卡范围：命名实体集合、DOCTYPE、
+    隐式/显式 tbody 混用规则。——ISSUE-FIX03-03 的剩余部分仍 OPEN。
+
+§7. 交付文件
+------------
+- src/core/parse.ts（仅 normalizeCellText 两个正则 + 文件头注释）
+- tests/core/nbsp.test.ts（新增 6 个 \v 用例）
+- artifacts/logs/FIX-04.txt（本文件）
+- task_handoffs/P029-FIX-04.json（另起提交，指向修复提交完整 SHA）
+未碰：oracle/reference.py、规格/docs/、bundle/、review/、artifacts/release/、
+scripts/verify_release.mjs、tests/e2e/、SPEC_VERSION、Golden 夹具。

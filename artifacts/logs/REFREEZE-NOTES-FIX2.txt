@@ -1,0 +1,221 @@
+P029 TableFork — REFREEZE-NOTES-FIX2 验收日志
+=============================================
+目的：修正 T015 独立审查（review/INDEPENDENT_REVIEW_R2.md）新发现的
+4 项 P2 记录问题（均为非阻断；其中 3 项与 R1 已指出的清单措辞问题同类——
+陈旧指针/排除枚举不全），为 R2 前一次修清；另 1 项为 E2E 导出测试加固。
+规格 v1.0.2；基线提交 6c81860（P029-FIX-04 handoff 提交，即冻结前的
+最新代码状态）不变；不改任何产品代码（src/、oracle/、cli/、docs/、
+bundle/ 零改动，只改测试断言一处）。
+
+重做说明：本卡曾冻结一次（E2 187cdf5），随后按任务 P2-T015-3 的核对
+标准对新冻结树重验，发现 notes 枚举仍差 1 个文件
+（review/INDEPENDENT_REVIEW_R2.md，见 P2-T015-3 末段），故重做一轮：
+模板枚举再补“独立审查报告”一类（E1b d6101aa），重新冻结为 E2b。
+E2 仍留在历史中，仅为 lineage 上的上一冻结；R2 以 E2b 为准。
+
+提交拓扑（沿用重冻结的三提交先例，不 amend）
+-----------------------------------------------
+D 954ddeb
+  P029-T015: handoff (result_commit 78404279b8cdfa221ac2de2e693e9ee112d5b243)
+  （T015 独立审查：P1-01 + P1-02 CLOSED，READY_FOR_FINAL_REVIEW）
+E1 da3b2ec2ed763267aa3a6a6aee44a36157f10cd3
+  P029-REFREEZE-NOTES-FIX2: fix stale manifest pointers (T015 P2-01/02/03)
+  + E2E export asserts 3 fields (P2-04), spec v1.0.2
+  仅改 2 个文件：scripts/verify_release.mjs（模板 + 文件头注释）、
+  tests/e2e/tablefork.e2e.ts（导出测试断言）。
+E2 （已 superseded）187cdf543d6922c6949a03514cf70ff857d125dc
+  P029-REFREEZE-FIX2: fix T015 P2 record issues (stale manifest pointers
+  + E2E export asserts), spec v1.0.2
+  首轮冻结：新 RELEASE_MANIFEST、source ZIP a5346462…、REVIEW_PACK_04、
+  REVIEW_PACK_05、REVIEW_INDEX、本日志初版。dist ZIP 未变。提交后
+  verify:release 为 RESULT: PASS（0 failing，见交接 JSON 初版记录，
+  已被本重做轮覆盖——初版交接 JSON 未提交）。
+  被 superseded 的原因：重验新冻结树时发现 notes 枚举仍差 1 文件
+  （INDEPENDENT_REVIEW_R2.md），见 P2-T015-3 末段。
+E1b d6101aaa4e08fc0d856d76904e650899c0fea347
+  P029-REFREEZE-NOTES-FIX2: extend manifest exclusion enumeration with
+  independent review report (T015 P2-03 re-verification on new freeze
+  tree), spec v1.0.2
+  仅改 scripts/verify_release.mjs：模板枚举补“独立审查报告”一类
+  （+ 模板注释溯源行）。不改产品代码，不改测试。
+E2b （本提交）P029-REFREEZE-FIX2: fix T015 P2 record issues (stale
+  manifest pointers + E2E export asserts + exclusion enumeration),
+  spec v1.0.2
+  新 RELEASE_MANIFEST、重打的 source ZIP、REVIEW_PACK_05、
+  REVIEW_INDEX、本日志（更新版）。PACK_04 未变（E2E 测试块自 E1 后
+  未动）；dist ZIP 未变（见下）。
+E3 （随后另起提交）P029-REFREEZE-NOTES-FIX2: handoff（result_commit 见
+  task_handoffs/P029-REFREEZE-NOTES-FIX2.json，即 E2b 的完整 SHA）。
+
+4 项修正前后对照（动手前逐项自核，全部属实）
+------------------------------------------------
+P2-T015-1（清单 excluded_reason 陈旧指针）：
+  前：review/RELEASE_MANIFEST.json 的 excluded_reason 写“哈希见
+      task_handoffs/P029-REFREEZE.json”。该文件记录的是旧冻结
+      （ca8bed6）的 source ZIP 哈希 3d023f3b50a12173311ed82763350074f8
+      d6b71a542f7bca21043949f370de27（3,740,523 B），不是本次的
+      d7b38e55…（3,741,576 B）——指针所指与本清单记录的哈希不一致。
+  后：删去该外部指针，改为自指——“发布 ZIP 的权威哈希见本清单自身
+      的 source_zip 与 dist_zip 字段”。未指向尚不存在的本次交接 JSON，
+      也未指向旧交接 JSON；自指最稳，不随重打失效。
+      生成器（~/workspace/p029-notesfix-manifest.mjs）直接写新措辞，
+      不再沿用旧字段值。
+
+P2-T015-2（脚本头注释陈旧指针）：
+  前：scripts/verify_release.mjs 文件头注释（第 37 行）写“哈希见
+      task_handoffs/P029-T013.json”——T013 时代的陈旧文字。
+  后：与 P2-T015-1 同口径改写——“发布 ZIP 的权威哈希见清单自身的
+      source_zip / dist_zip 字段，不指向任何交接 JSON”。
+      联动：该脚本在清单 192 文件内、在 source ZIP 内、全文嵌在
+      REVIEW_PACK_05.md 内、SHA 列在 REVIEW_INDEX.md——改一字即改
+      字节，故重打 source ZIP、联动 REVIEW_PACK_05.md 与
+      REVIEW_INDEX.md（上一轮已实证：只改模板不重打，verify 必 FAIL）。
+
+P2-T015-3（notes 排除枚举未点名旧交接 JSON）：
+  前：清单 notes 的排除枚举“清单自身、发布 ZIP、重冻结日志”未点名
+      task_handoffs/P029-REFREEZE.json；该旧交接 JSON 在冻结提交 E2
+      （476dd63）的树内但不在 ZIP 内，“与冻结发布提交的树逐文件一致”
+      一句按字面差 1 个文件。
+      动手前自核：git archive 比对冻结树（199 文件）vs ZIP（192 条目），
+      差集恰为 7 个文件：清单自身、2 个发布 ZIP、3 个重冻结日志
+      （T013-release.txt、REFREEZE-FIXR1.txt、REFREEZE-NOTES-FIX.txt）、
+      旧交接 JSON P029-REFREEZE.json——与任务所述全集一致。
+      本次交接 JSON P029-REFREEZE-NOTES-FIX.json 是在冻结后才提交的，
+      不在冻结树内，未算进去。
+  后：buildManifestNotes() 模板的排除措辞改为“清单自身、发布 ZIP、
+      重冻结日志、交接 JSON”，枚举逐文件准确。
+      重做补记（E2 冻结后重验）：按同一标准对新冻结树（E2 187cdf5，
+      203 文件）做 git archive 比对，树 − ZIP = 11 个文件：清单自身、
+      2 个发布 ZIP、4 个重冻结日志（T013-release.txt、REFREEZE-FIXR1.txt、
+      REFREEZE-NOTES-FIX.txt、REFREEZE-NOTES-FIX2.txt）、3 个交接 JSON
+      （P029-REFREEZE.json、P029-REFREEZE-NOTES-FIX.json、P029-T015.json）、
+      review/INDEPENDENT_REVIEW_R2.md。前 10 个均被枚举覆盖，唯独
+      INDEPENDENT_REVIEW_R2.md（T015 独立审查报告，7840427 入树，在
+      192 清单外）不属任何一类——按 T015-3 审查员自己的计数标准
+      （“树上多出 N 文件，措辞覆盖其中 N−1 个”），新冻结的 notes 仍
+      差 1 个文件。故重做：模板枚举再补“独立审查报告”一类
+      （“清单自身、发布 ZIP、重冻结日志、交接 JSON、独立审查报告”），
+      入树但不在 192 清单内的独立审查报告均属此类；重验 E2b 树时
+      11/11 覆盖（见下）。该文件不是产品代码，不在发布包内，verify
+      对其只 WARN；本次重做不改动它的任何内容。
+
+P2-T015-4（E2E 导出测试缺三字段断言）：
+  前：tests/e2e/tablefork.e2e.ts 导出测试（约第 186 行）只断言下载
+      JSON 的 schema / witness / compare / proof，未断言 jobId /
+      inputHash / specVersion。
+  后：在该导出测试中补三字段断言：jobId 非空且符合 UI 合同
+      `job-<seq>`；inputHash 为 64 位小写十六进制且等于输入 HTML
+      （TFK-A 预设原文）的 SHA-256；specVersion 为 "1.0.2"。
+      口径自核：UI 经 Worker 发 `job-<seq>`（src/ui/App.tsx），输入
+      HTML 原样发送（preset.html）；期望哈希独立重算
+      2ebbbde88fa65509a6aac5e8c74884c56361f9442a7b4527fdf6fcdc7a9c0341，
+      与 tests/core/report.test.ts 的 SECTION_63_INPUT_HASH 完全一致。
+      三字段已有 report.test.ts、金测与 CLI 三重覆盖，本项只补齐 E2E
+      一环；产品代码零改动。
+
+新旧 ZIP 对照
+--------------
+source ZIP tablefork-source-6c81860.zip：
+  旧冻结（476dd63） 3,741,576 B，sha256 d7b38e5554a292d0e2bd065184920077c44f250c9f2bf6b41e649ce70e69f497
+  首轮冻结 E2（187cdf5，已 superseded）3,742,316 B，sha256 a534646294b809976cd432adaff0198a8b8d055b881ed8c6ee926c4c2e09acd5
+  本轮冻结 E2b 3,742,491 B，sha256 7028f903d9dff166a06ffd9d3c97842cbf780164e05041ed9a27076454582801
+  （E2b − E2：+175 B，仅脚本模板两处措辞 + 分卷/索引联动；确定性打包
+  两次逐字节一致，由生成器内校验）
+dist ZIP tablefork-dist-6c81860.zip：
+  98,874 B，sha256 e0a2ce5e39e69981d7cdec406cd7c1e0a7585bd20eaef18e16f58473c89d5602
+  ——与旧冻结逐字节一致（测试改动不影响 dist；全新构建重打验证通过）。
+清单文件总数仍为 192；代码文本文件 50；分卷 11/15/10/7/7。
+packaged_from_head = d6101aaa4e08fc0d856d76904e650899c0fea347（E1b）。
+机械重生成文件 = 2 个（review/REVIEW_INDEX.md、review/REVIEW_PACK_05.md），notes 等式为真。
+重验 E2b 树 − ZIP = 11 个文件（清单自身、2 发布 ZIP、4 重冻结日志、
+3 交接 JSON、INDEPENDENT_REVIEW_R2.md），枚举 5 类 11/11 覆盖。
+
+生成步骤（生成器在仓库外，不提交）
+------------------------------------
+1. E1 提交后，~/workspace/p029-refreeze-generator.mjs
+   --head da3b2ec2… --generated-by P029-REFREEZE-NOTES-FIX2
+   --self-row-sha 63faff127797… --self-row-bytes 29654 --extra-exclusion
+   重生成 5 卷 + 索引；定点取舍：PACK_01..03 仅卷头“生成：”行不同
+   （P029-REFREEZE → FIX2，+11 B），已 revert；只留 PACK_04（E2E 测试
+   块）与 PACK_05（脚本块）；INDEX 取生成器产物后定点修正——删去全新
+   扫描带入的 6 行非代码行（REFREEZE-FIXR1.txt、REFREEZE-NOTES-FIX.txt、
+   INDEPENDENT_REVIEW_R2.md、3 个交接 JSON），合计 198 改回 192，
+   PACK_01..03 的分卷表/非代码行恢复旧 SHA/字节（包已回退），其余
+   （页眉 HEAD、PACK_04/05 行、2 个代码行、自指行）按生成器为准；
+   修正后逐项校验通过（分卷表与磁盘包 SHA 一致、非代码行全在 192 内）。
+   全新扫描会扫入 198 文件（192 + 6 个打包后入树文件），故不用其
+   INDEX 原样——与上一轮 192 -> 194 的教训同理。
+   重做轮：E1b 提交后同法重跑（--head d6101aa…，
+   --self-row-sha 85f389cb5262… --self-row-bytes 29655）；
+   PACK_04 未变（字节一致 d5502dde…），只留 PACK_05；PACK_01..03
+   照例 revert；INDEX 定点修正——删去全新扫描带入的 7 行非代码行
+   （6 行同前 + REFREEZE-NOTES-FIX2.txt 本日志），合计 199 改回 192，
+   修正后逐项校验通过。
+2. ~/workspace/p029-notesfix-manifest.mjs（已按 FIX2 更新：CHANGED
+   5 文件、PACK_04/05 双卷更新、excluded_reason 自指措辞、
+   regeneratedFiles 3 文件、handoffRef/generatedBy FIX2；重做轮把
+   regeneratedFiles 改为 2 文件 INDEX + PACK_05——本轮只改脚本，
+   PACK_04 未动）
+   --root ~/workspace/p029-tablefork --head d6101aa…（E1b）：
+   定点复用当前清单的 192 路径表重算 5 个文件条目 + notes +
+   excluded_reason + packaged_from_head/at_utc，重打 source ZIP 两次
+   （确定性校验通过），全新构建重打 dist ZIP（与旧 SHA 逐字节一致）。
+   首轮 --head 为 da3b2ec…（E1），产物为 E2 的清单/ZIP（已 superseded）。
+3. 本日志写于清单生成之后，故不在 192 清单内（同 REFREEZE-FIXR1.txt
+   与 REFREEZE-NOTES-FIX.txt 的先例）；verify:release 对此只报 WARN，
+   不失败。
+
+全量验收（首轮提交前，HEAD=E1；TMPDIR=~/workspace/p029-tmpdir，
+未用 NODE_COMPILE_CACHE=0；e2e 写脏的两个易变日志文件已 git checkout 恢复）
+--------------------------------------------------------------------------------
+npm run typecheck        exit 0
+npm run test:core        exit 0 — 745/745（11 文件）
+npm run oracle           exit 0 — 49/49 passed（0 failed）
+npm run test:e2e         exit 0 — 22 passed（含导出测试新增三字段断言）
+npm run test:e2e:perf    exit 0 — 1 passed（30 runs）
+npm run build            exit 0
+npm run verify:release   提交前 20/21 PASS，1 FAIL 是预期内的提交前状态：
+                         “fresh git archive HEAD matches source zip contents”
+                         189/192——REVIEW_INDEX.md、REVIEW_PACK_04.md、
+                         REVIEW_PACK_05.md 是相对 HEAD=E1 的未提交修改，
+                         git archive 取的是 HEAD 里的旧版，故 3 文件不
+                         一致；其余 20 项全 PASS（含 ZIP 内容 192/192、
+                         清单哈希与工作树 190/190 + 2 易变跳过、dist 与
+                         全新构建逐字节一致、分卷 5/5、代码文件 50/50、
+                         索引分卷表一致；另 1 条 WARN：工作树有 6 个打包
+                         后新增文件不在冻结清单内，属预期）。
+                         提交后（HEAD=E2）重跑为 RESULT: PASS（0 failing）
+                         ——E2 的提交后验收（typecheck / test:core /
+                         oracle / build / verify:release）全部 exit 0，
+                         但 E2 已被重做轮 superseded，最终以 E2b 为准。
+
+重做轮验收（提交前，HEAD=E1b；测试与产品代码自首轮通过后未动，
+故 test:e2e / test:e2e:perf 沿用首轮结果，不重跑；易变日志未写脏）
+--------------------------------------------------------------------------------
+npm run typecheck        exit 0
+npm run test:core        exit 0 — 745/745（11 文件）
+npm run oracle           exit 0 — 49/49 passed（0 failed）
+npm run build            exit 0
+npm run verify:release   提交前 20/21 PASS，1 FAIL 是预期内的提交前状态：
+                         “fresh git archive HEAD matches source zip contents”
+                         ——REVIEW_INDEX.md 与 REVIEW_PACK_05.md 是相对
+                         HEAD=E1b 的未提交修改，git archive 取的是 HEAD
+                         里的旧版；其余 20 项全 PASS（含 ZIP 内容 192/192、
+                         清单哈希与工作树一致、dist 与全新构建逐字节一致、
+                         分卷 5/5、代码文件 50/50、索引分卷表一致）。
+                         提交后（HEAD=E2b）重跑须为 RESULT: PASS（0 failing），
+                         该结果见交接 JSON task_handoffs/P029-REFREEZE-NOTES-FIX2.json。
+
+遗留
+----
+- 原冻结提交 476dd63 与新冻结提交 E2b 的关系：E2b 的树 = 476dd63 的树 +
+  本次修正（脚本模板 + E2E 断言、PACK_04、PACK_05、INDEX、清单、
+  source ZIP、本日志）+ E1 / E1b 的模板/测试提交；首轮冻结 E2
+  （187cdf5）已被 E2b superseded，仅留 lineage。R2 以 E2b 为准，
+  476dd63 与 187cdf5 仅为 lineage 上的上一冻结。
+- REVIEW_PACK_01..03 的卷头仍写“生成：P029-REFREEZE”（上一轮先例：
+  只留内容变化的分卷，卷头相同的分卷 revert）；PACK_04/05 卷头为
+  “生成：P029-REFREEZE-NOTES-FIX2”。
+- REVIEW_INDEX.md 的“未覆盖”节未单列 REFREEZE-NOTES-FIX.txt /
+  REFREEZE-NOTES-FIX2.txt（与上一轮一致，沿用 T013-release.txt +
+  REFREEZE-FIXR1.txt 的既有写法；verify 只核对分卷表，不核对该节）。

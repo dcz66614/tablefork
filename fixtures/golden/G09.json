@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G09",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th rowspan=\"2\">产品</th><th colspan=\"2\">2026预算</th></tr><tr><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G09"
+}

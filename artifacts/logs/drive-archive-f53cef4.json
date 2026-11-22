@@ -1,0 +1,240 @@
+{
+  "tablefork-source-4025061.zip": {
+    "id": "1rkQyS4THDVO5PbbMYNd6eJr6oRl3Cna0",
+    "size": 3641833,
+    "md5": "22bb1feacdcaf56a87004a83e992f0b3",
+    "local": "artifacts/release/tablefork-source-4025061.zip",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "tablefork-dist-4025061.zip": {
+    "id": "1G9MGX8PqJlzMNHpIafVTwKIB6kY6wUOU",
+    "size": 98684,
+    "md5": "d783378b8ced1f0f094b2019c5f7530a",
+    "local": "artifacts/release/tablefork-dist-4025061.zip",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "RELEASE_MANIFEST.json": {
+    "id": "1uGrrrTl--U9JmCQ8t6iQcQcEt3nUBwGU",
+    "size": 30465,
+    "md5": "93d9f0efc3587a946494a39b1431d2ec",
+    "local": "review/RELEASE_MANIFEST.json",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "LICENSE": {
+    "id": "1nWDbSpacFNESSn4DBchMrDufjp4EU3UL",
+    "size": 1079,
+    "md5": "6c704e01b9569ce5d516e112a72d2508",
+    "local": "LICENSE",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "README.md": {
+    "id": "1oJJdCjrcZ6SjH_q1iufQZHep8bHit2tl",
+    "size": 5589,
+    "md5": "998af616e4b1ef5bea1ee094c498aea1",
+    "local": "README.md",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "CHANGELOG.md": {
+    "id": "1RRYvtmCp9VvWCr2OrWDxtOnWpHVLUht5",
+    "size": 2634,
+    "md5": "ca1424c9a5caab00d5ec7e53914195d2",
+    "local": "CHANGELOG.md",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "SECURITY.md": {
+    "id": "1VrrUOjwa03ifJH3Jt6Y4IohyEhg1ztzy",
+    "size": 3825,
+    "md5": "8b80fc34601e0b6875428dfdd705adc4",
+    "local": "SECURITY.md",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "THIRD_PARTY_NOTICES.md": {
+    "id": "1CB0itSuXjFo0-HNdQnSfgPcDzbAE_h4U",
+    "size": 9054,
+    "md5": "5e8e35af9ede1130a76040d2e8e4e954",
+    "local": "THIRD_PARTY_NOTICES.md",
+    "folder": "1BNXivVvfyzrJjo0tKad9g-caX3EfiVKY"
+  },
+  "REVIEW_INDEX.md": {
+    "id": "1ZWLdQ5XNfKvcM4tVXIqyH1w0fkrVP8b4",
+    "size": 27142,
+    "md5": "c95e9671a0e3dd06ecf29990d5f4edb5",
+    "local": "review/REVIEW_INDEX.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "REVIEW_PACK_01.md": {
+    "id": "1Fp0NxPlWejPZUPIcCv1gj7UqRjC5XYII",
+    "size": 105831,
+    "md5": "c9ff67293328babf70ecfc57007d6b8a",
+    "local": "review/REVIEW_PACK_01.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "REVIEW_PACK_02.md": {
+    "id": "1vg8y-VDxYvl8ISyTexgfGCuHwbgBhQ-M",
+    "size": 84136,
+    "md5": "5037f794bc2b0c20bd3adb799bb188f7",
+    "local": "review/REVIEW_PACK_02.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "REVIEW_PACK_03.md": {
+    "id": "1Qi_k_sGxgTmHi-45tAmj5PGXYGzqcVeL",
+    "size": 106356,
+    "md5": "6a2af288427caefc0dfe6b3de1d65dc6",
+    "local": "review/REVIEW_PACK_03.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "REVIEW_PACK_04.md": {
+    "id": "1I1HGcPTdSu8eblH32MdizC1itpMB-fDf",
+    "size": 55262,
+    "md5": "81c9046a03b39607f8a9b884864f7c48",
+    "local": "review/REVIEW_PACK_04.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "REVIEW_PACK_05.md": {
+    "id": "1i3ZFS3JUgSe2Xnnhwf8p-uA3pfu56xwR",
+    "size": 78104,
+    "md5": "7637e283868352911a625499510fe108",
+    "local": "review/REVIEW_PACK_05.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "SCREENSHOT_INDEX.md": {
+    "id": "1Zlpc4dI6KgL1AKm0zeR4s2rGiN8TAEiF",
+    "size": 3675,
+    "md5": "a5dbfaed4d3e0e60d39bb90ef0c11427",
+    "local": "review/SCREENSHOT_INDEX.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "INDEPENDENT_REVIEW.md": {
+    "id": "1ABkZ-cADIM03MNPDPekxxc4BtkZgdkiC",
+    "size": 28877,
+    "md5": "36877ab6c7587f72c515b7306c91dfac",
+    "local": "review/INDEPENDENT_REVIEW.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "FINAL_REVIEW_R1_MESSAGE_DRAFT.md": {
+    "id": "1gOIZa52J62n6nIAJE8uFfNe9DfV8RzOJ",
+    "size": 8323,
+    "md5": "a41962dd18ed2e0525f71dfc7c992e28",
+    "local": "review/FINAL_REVIEW_R1_MESSAGE_DRAFT.md",
+    "folder": "1jAHjk5ZV1WXsDjezA-OfVwicKOto4G8O"
+  },
+  "T013-release.txt": {
+    "id": "1FBzPljj8IGujbzW5oqj6V8Pe9E_9i1VJ",
+    "size": 12197,
+    "md5": "432817e53af324d9a5ee8171c31717b2",
+    "local": "artifacts/logs/T013-release.txt",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T013-FIX-01.txt": {
+    "id": "1gUsVCCdpMZvt8UZvQfE9HWRGN9-g-NDE",
+    "size": 11758,
+    "md5": "101c3d29e856123b3adacbfc12efc0d5",
+    "local": "artifacts/logs/T013-FIX-01.txt",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T014-review.txt": {
+    "id": "1B9MkzPWRgSzwBnI3itc5C7sp39nWMbdM",
+    "size": 9652,
+    "md5": "eaafa5d94450afbcf3ccacf82e5bf4cd",
+    "local": "artifacts/logs/T014-review.txt",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-performance.json": {
+    "id": "1nZ_0QYWhXvpO9B5tjOig77rAaBQBah5O",
+    "size": 10700,
+    "md5": "b93cc449472026f3a0cd78824c167251",
+    "local": "T012-performance.json",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T009-desktop-A.png": {
+    "id": "1pF-VoNJNByxLcyAN3bQRPdjl9-G_OGmk",
+    "size": 294060,
+    "md5": "81941fa4d2507394c9b60e0f3e2b5435",
+    "local": "artifacts/screenshots/T009-desktop-A.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T009-desktop-C.png": {
+    "id": "19MV6qeFBmBk9vmAOJ5Yc-AJPbUQ9nUPG",
+    "size": 261622,
+    "md5": "dbdc4b5ddd0c40abaa57ee7a5039ddf5",
+    "local": "artifacts/screenshots/T009-desktop-C.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T009-desktop-D.png": {
+    "id": "12aCGKrTuYNORQZZEYPa37ue4WfH6uwkQ",
+    "size": 164775,
+    "md5": "4551583b0a2ef0363342433537467fc9",
+    "local": "artifacts/screenshots/T009-desktop-D.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T009-keyboard-focus.png": {
+    "id": "1kG4pogaIC5zyuFdGcJjYFwBVlglEcubC",
+    "size": 148571,
+    "md5": "24f6f434a1f6a2a2e30e7c8f1922c861",
+    "local": "artifacts/screenshots/T009-keyboard-focus.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T009-mismatch-A.png": {
+    "id": "1IKic_qWzD6DWOX-A25OEplSw1HfiU-vz",
+    "size": 328000,
+    "md5": "573c4f9c6c30dd473a91bd8ba6fdaf06",
+    "local": "artifacts/screenshots/T009-mismatch-A.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T009-mobile390-A.png": {
+    "id": "1CorEW-zFDaAAaNrp7DPlBplvmCOp8dMu",
+    "size": 296565,
+    "md5": "f43108b9fcc7c4be98bfbe65b660fb97",
+    "local": "artifacts/screenshots/T009-mobile390-A.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-A-origin-empty.png": {
+    "id": "1I2Tu2Qj_1OY48JAKjr7aT8Uzy30sBk1E",
+    "size": 294060,
+    "md5": "81941fa4d2507394c9b60e0f3e2b5435",
+    "local": "artifacts/screenshots/T012-A-origin-empty.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-B-repeat-value.png": {
+    "id": "1QGOEJRgINDre1hmsPnfwDjdukQD8ikmQ",
+    "size": 263736,
+    "md5": "e6996235c2ddc512cbe5cd08710611ee",
+    "local": "artifacts/screenshots/T012-B-repeat-value.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-C-no-witness.png": {
+    "id": "18X0Fq3zlPDiT5lOvuIj-860h5kplYhbb",
+    "size": 258709,
+    "md5": "a5486484e91c541fc931a89711f0fd21",
+    "local": "artifacts/screenshots/T012-C-no-witness.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-D-unsupported.png": {
+    "id": "1QBLtisNa9SR-l7C83vBi5CofG5A7JGZN",
+    "size": 161803,
+    "md5": "2951e61c0655635ff812e78f6470176c",
+    "local": "artifacts/screenshots/T012-D-unsupported.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-mobile390-A.png": {
+    "id": "1E9ia3sucTrguk25QtOt7MrhyBmQYJBxW",
+    "size": 296565,
+    "md5": "f43108b9fcc7c4be98bfbe65b660fb97",
+    "local": "artifacts/screenshots/T012-mobile390-A.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-perf-fail-run2.png": {
+    "id": "1M4MY9IDqgU5zhR70F0XG56V0E4qY_YEe",
+    "size": 145408,
+    "md5": "756c1adb4d953846d374ff88487c2495",
+    "local": "artifacts/screenshots/T012-perf-fail-run2.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  },
+  "T012-perf-fail.png": {
+    "id": "1Ole8ybIprN7MgRhX0053VfzlwdkaPCCQ",
+    "size": 145408,
+    "md5": "756c1adb4d953846d374ff88487c2495",
+    "local": "artifacts/screenshots/T012-perf-fail.png",
+    "folder": "1nIgpqLumoox9mW-NgVF7aocnMJEu2ptw"
+  }
+}

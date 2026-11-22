@@ -1,0 +1,111 @@
+# P029-T014 独立审查 — 复测命令真实记录
+# 审查者：T014 独立审查会话（与 T003–T013 构建者不同会话；全部命令由本审查者亲自在冻结工作区运行）
+# 基线 HEAD fb88a25（冻结发布提交 f53cef4）；规格 v1.0.1；日期 2026-11-21 ~05:03–05:40 GMT
+# 工作区 /home/hatch/workspace/p029-tablefork；Node v24.22.1；npm 10.9.4；Python 3.12.3；Chromium 159.0.8154.6
+# 本文件只记录真实退出码与关键输出；完整原始日志见 /tmp/t014-*.log（审查会话临时文件）
+
+## 1. npm run test:core — EXIT 0
+# Test Files 10 passed (10); Tests 719 passed (719); Duration 4.91s; Start 05:03:51
+# [T011-O6] alternativeHtml raw-string diffs (structural comparison passed): 0 case(s): none
+# crosscheck 205 tests（含 200 固定种子 + cap128/cap127）全部 AGREE
+
+## 2. npm run oracle — EXIT 0
+# PASS G01 … PASS G48（逐个打印）；48/48 passed (0 failed)
+
+## 3. npm run verify:release（树干净时） — EXIT 0
+# git HEAD: fb88a25cbf05f24591a68d19e18b95c84d964054 (short fb88a25)
+# [PASS] manifest schema / spec_version 1.0.1 / base_commit 4025061 / files non-empty 174 files
+# [PASS] manifest lists every worktree source file present at packaging — 174 listed, 177 scanned
+# [WARN] worktree has 3 source file(s) not in this frozen manifest: artifacts/logs/T013-FIX-01.txt, task_handoffs/P029-T013-FIX-01.json, task_handoffs/P029-T013.json
+# [PASS] manifest file hashes match worktree — 172/172 OK; 2 volatile run output(s) skipped
+# [PASS] source zip exists / dist zip exists
+# [PASS] source zip bytes+sha match manifest — 3641833 bytes, sha256 5ca6aec629adc562…
+# [PASS] source zip entries == manifest files — 174 entries
+# [PASS] source zip contents match manifest hashes — 174/174 OK
+# [PASS] manifest file hashes match git HEAD blobs — 174 in HEAD OK, 0 modified, 0 not in HEAD yet
+# [PASS] fresh git archive HEAD matches source zip contents — 174/174 files content-identical
+# [PASS] dist zip bytes+sha match manifest — 98684 bytes, sha256 af8f43a9af25baeb…
+# [PASS] dist zip == fresh build (deterministic re-zip, byte-identical) — fresh: 98684 bytes, sha256 af8f43a9af25baeb…
+# [PASS] dist zip entries == fresh dist/ files — 4 entries
+# [PASS] review packs exist — 5 packs
+# [PASS] review pack hashes match manifest — 5/5 packs OK
+# [PASS] every code text file appears in exactly one pack — 49/49 code files packed
+# [PASS] REVIEW_INDEX pack table matches pack hashes — 5 packs listed
+# RESULT: PASS (0 failing checks)
+
+## 4. npm run verify:release（两日志文件被 e2e 写脏、不恢复） — EXIT 0 — ISSUE-T013-6 决定性复核
+# git status 当时：M artifacts/logs/T012-cancel-probe.json；M artifacts/logs/T012-perf-browser.json
+# [PASS] manifest file hashes match worktree — 172/172 OK; 2 volatile run output(s) skipped
+# RESULT: PASS (0 failing checks)
+# 复核后已 git checkout -- 恢复两文件；树干净（仅未跟踪 COORDINATOR_LOG.md、S0_REPORT.md、test-results/）
+
+## 5. npm run test:e2e — EXIT 0
+# 20 passed (25.2s)；含 cancel/race（newest wins）、offline 零远程请求、<script>/<img> 安全、no storage writes、390px、keyboard
+# 本次运行只写脏 artifacts/logs/T012-cancel-probe.json（perf-browser 由 perf 项目写脏）；已恢复
+
+## 6. npm run test:e2e:perf（隔离串行） — EXIT 0
+# 1 passed (19.0s)；Chromium 159.0.8154.6；32x12 表（384 槽、89 DOM 格、78 合并格、3047 字节）、ORIGIN_EMPTY、CERTIFIED_COLLISION
+# stats_ms: n=30, min=160.9, p50=203.2, p95=309.6, max=310.9, target_p95_ms=500, pass=true
+# runs_ms（30 值）: 294, 309.6, 248.6, 285.5, 285.3, 306.6, 214.6, 187.6, 205.8, 231.7, 236.8, 186.3, 292.8, 188.9, 193.1, 234.7, 203.2, 183.5, 181.9, 196, 222.4, 172.2, 168.6, 180, 250.5, 174.3, 167.7, 160.9, 310.9, 175.8
+# 本次为第 9 组隔离测量；此前 8 组：257.5 / 263.2 / 282.8 / 286.0 / 295.2 / 301.6 / 312.7 / 373.8，全部 ≤500ms；唯一超标为 515.9ms 一次离群（ISSUE-T013-1）
+
+## 7. npm run typecheck — EXIT 0；npm run build — EXIT 0（2.03s；dist/assets/index-B96EM8rn.js 269.36 kB）
+
+## 8. CLI：npm run analyze -- --input fixtures/TFK-A.json --out /tmp/t014-TFK-A.json — EXIT 0
+# schema tablefork.report/v1；witness CERTIFIED_COLLISION；compare NOT_SUPPLIED
+# proof: sourceCellId c01；aGraphSha256 dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+# bGraphSha256 a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+# markdownSha256 83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1；splitCost 1；headerAssociationChanged true
+# facts: (2,0,c04,A,[产品]) (2,1,c05,120,[2026预算,收入]) (2,2,c06,80,[2026预算,成本])，行标题均空、headerStatus UNKNOWN
+# alternativeHtml: <table><thead><tr><th rowspan="2">产品</th><th>2026预算</th><th></th></tr><tr><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+# Python hashlib 独立复算 canonicalMarkdown SHA = 83da51044091…（与 proof.markdownSha256 一致）
+
+## 9. 独立重算 §6.3 示例（自写 /tmp/t014-recompute.mts 调冻结 analyze()；Node crypto 交叉核对）— EXIT 0
+# ORIGIN_EMPTY: witness CERTIFIED_COLLISION, source c01, headerAssociationChanged true
+#   aGraph dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+#   bGraph a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+#   md     83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1 (87 bytes)
+#   nodeCrypto md check true
+# REPEAT_VALUE: witness CERTIFIED_COLLISION, source c00, headerAssociationChanged true
+#   aGraph dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+#   bGraph ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1
+#   md     e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb (103 bytes)
+#   nodeCrypto md check true
+# facts（两策略相同）: (2,0,c04,A) (2,1,c05,120) (2,2,c06,80)
+# 另：直接从 docs/PROJECT_BOOK.md 文件提取 §6.3 Markdown 块重算：87 字节，SHA 83da51044091…，与 F(A) 逐字节一致
+
+## 10. 随机 Golden 双向核对（除 G09 外；TS analyze vs Python Oracle 直接调用）
+# G17 ORIGIN_EMPTY：双方一致 — CERTIFIED_COLLISION, src c02, HEADER_ASSOCIATION_CHANGED；
+#   a e8cc6d3e7580b718527b9aa4c6c64d5d6dd14ea0d1ab1e5ada3bad1790d5ad77；
+#   b b266ae5e4cccaa8526fc110beeca251309d59996b389077055d06302bd80394d；
+#   md 74d6a224bac3fbd066ec70da34b631ec14919d1d83707e952e6f92743b46e639；
+#   facts (1,1,c03,甲)(2,1,c04,乙)；handover 两行含“行标题: 研发 | 列标题: 项目”
+# G33 ORIGIN_EMPTY：双方一致 — NO_WITNESS_FOUND；f_origin/f_repeat SHA be47d17bbf04fe61f3f6e73ed0d7def6a7595087d8a05442a352f6e73cf578b7；
+#   facts (0,0,c00,a|b)(0,1,c01,c\d)(1,0,c02,e\|f)(1,1,c03,g)（转义用例一致）
+# G44 ORIGIN_EMPTY：双方一致拒绝 — Oracle TableForkError rowspan=9 outside 1..8；TS TableForkInputError INVALID_SPAN；
+#   golden_expected.json 该条确为 {"error": {"code": "INVALID_SPAN", ...}}；fixture 输入与 expected 输入逐字一致
+# G25 ORIGIN_EMPTY：双方一致 — CERTIFIED_COLLISION, src c00, HEADER_ASSOCIATION_CHANGED；
+#   a a662f342c938f1b235a061eee7d3197a0063dbd818cf45fb5437a9d4a43c83c2；
+#   b 2feeef09fab26b24e51d39aa6afe7156982cac4daff541fbb4a5e7b1d8251684；
+#   md 60c9b88b75a24ee8f2aa64af22c35ce629e4efcb3d7f42cae8e21f2d9ec07f53；
+#   facts 含同一来源 c04 两次（(2,0) 与 (3,0)，值“左”）— 共享来源格逐槽出记录
+
+## 11. 发布包核对（自写 Python，对照 review/RELEASE_MANIFEST.json）
+# packaged_from_head: c1af8736989418b863b9b762535dd9128b3a7b5e
+# source_zip: 3641833 bytes, SHA 5ca6aec629adc562fa7f0e13bdcff0e6e0d9a1e85a222615666cad828c630693 — 磁盘实测 bytes+SHA 均一致
+# dist_zip: 98684 bytes, SHA af8f43a9af25baeb4a3d51a34c0eb76e6b926faeca7d9b587f7367e4eb7044b1 — 磁盘实测 bytes+SHA 均一致
+# 清单 174 文件；逐文件 git blob 比对：
+#   vs c1af873：172/174 一致；不一致 2 个：review/REVIEW_INDEX.md、review/REVIEW_PACK_05.md（打包时机械重生成的两个审查文件，见审查报告 §8）
+#   vs f53cef4（冻结发布提交）：174/174 一致；vs fb88a25（HEAD）：174/174 一致
+# 抽查 22 文件（工作树 SHA == 清单 SHA == HEAD blob SHA，含 LICENSE、README、verify 脚本、G09、package.json、witness.ts、oracle/reference.py、REVIEW_INDEX、CHANGELOG、SECURITY、THIRD_PARTY_NOTICES、cli/analyze.ts、App.tsx、golden.test.ts、PROJECT_BOOK.md、TFK-A、golden_expected.json、sha256.ts、worker、REVIEW_PACK_01、T012-performance.json、playwright.config.ts）：22/22 OK
+
+## 12. REVIEW_PACK 手工抽验（自写 Python 解析 REVIEW_PACK_01.md）
+# PACK_01 11 块（compare/flatten/grid/headers/index/parse/records/report/sha256/types/witness）：
+#   块头 SHA-256 与源文件 SHA 全部一致（11/11）；块内容 + 一个末尾 LF 与源文件逐字节一致（11/11，围栏捕获约定与 verify_release.mjs 注释一致）
+# 各卷块数：PACK_01 11，PACK_02 15，PACK_03 9，PACK_04 7，PACK_05 7，合计 49（verify 49/49）
+
+## 13. 安全/离线抽查（grep + e2e 实证）
+# src/、cli/ 中无 fetch(/XMLHttpRequest/sendBeacon 调用；无 localStorage/IndexedDB 写入（仅注释与 UI 文案）；
+# 无 dangerouslySetInnerHTML / innerHTML；src/ 中无 node:crypto import（仅注释提及）；
+# e2e offline 测试通过：全部远程请求被阻断后 TFK-A 仍可分析，零远程请求
+# /tmp 当时用量：512M tmpfs 用 56%（229M 空闲）— ISSUE-T013-2 未在本轮复现

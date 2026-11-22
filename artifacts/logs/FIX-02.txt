@@ -1,0 +1,210 @@
+P029-FIX-02: report carries jobId/inputHash/specVersion (R1 P1-02), spec v1.0.2
+======================================================================
+执行员：FIX-02 子代理；工作根目录 ~/workspace/p029-tablefork/
+基线：HEAD 95b9bd2（FIX-01 handoff 提交；树干净，除协调员未跟踪文件
+COORDINATOR_LOG.md / S0_REPORT.md / test-results/ 外，未碰）。
+
+1. 缺陷（R1 P1-02，主聊天已亲自读源码核实；R1 全文 ~/workspace/P029_FINAL_REVIEW_R1.md）
+--------------------------------------------------------------------------------
+- `AnalyzeResult`（src/core/types.ts）无 jobId/inputHash/specVersion；
+  report.ts 组装结果时不生成；ExportPanel downloadJson 直接
+  JSON.stringify(result)；SPEC_VERSION 常量定义了 1.0.1 但从未进入导出报告。
+- 规格冲突：PROJECT_BOOK.md §9（“所有报告具 jobId + inputHash +
+  specVersion”）vs §6.1 类型定义无此三字段。
+- 主聊天裁决：§9 优先——三字段进入最终 JSON；§6.1 类型定义同步补上
+  三字段；规格 v1.0.1 → v1.0.2。
+
+2. 改动（代码）
+--------------------------------------------------------------------------------
+src/core/types.ts：
+- `AnalyzeResult` 增加三个必填字段（紧跟 schema 之后）：
+  `jobId: string; inputHash: string; specVersion: string`。
+- `SPEC_VERSION` '1.0.1' → '1.0.2'；文件头“唯一权威”版本号同步。
+
+src/core/report.ts：
+- `analyze(input)` → `analyze(input, jobId)`，jobId 为必填第二参数，
+  不给空串默认值；运行时 fail-closed：jobId 不是非空字符串时与无效
+  输入同码抛 TableForkInputError（code INVALID_RAGGED_GRID），不返回
+  无 jobId 的结果。
+- 组装时填入：jobId（传入值原样）、inputHash（输入 HTML 原文的
+  SHA-256 十六进制，用核心已有的同步实现 src/core/sha256.ts 的
+  sha256Sync 算，与 witness 的 proof 同一实现，未换算法）、
+  specVersion（SPEC_VERSION 常量）。最终序列化的 JSON（UI 下载、CLI
+  输出、Worker RESULT 的 data）由此三字段齐全。
+
+src/worker/tablefork.worker.ts：ANALYZE 分支传消息外层的 jobId 作
+analyze() 第二参数——RESULT 的 data.jobId 与外层 jobId 一致。
+
+cli/analyze.ts：传 `cli-<fixture_id>`（确定性，CLI 输出可复现）。
+
+src/ui/App.tsx：仅顶栏字样“规格 v1.0.1”→“规格 v1.0.2”。
+src/ui/ExportPanel.tsx：未动——类型改完后 JSON 下载自动带三字段，
+已实测验证（见 §4）。
+src/core/parse.ts：只改文件头注释里的版本号（v1.0.1→v1.0.2），
+normalizeCellText 实现一字未动（NBSP 是 FIX-03 的活）。
+其余 src 文件头注释里的 v1.0.1 统一改 1.0.2（compare/flatten/grid/
+headers/records/witness/localText/presets/protocol）；残留一处有意
+保留：records.ts:18“（项目书 v1.0.1 勘误）”指 v1.0.1 那次勘误本身，
+是历史引用，不是现行版本号。
+
+scripts/verify_release.mjs：仅 SPEC_VERSION 改 '1.0.2'；BASE_COMMIT
+不动（留待重冻结卡）。本卡不跑 verify:release（见 §6）。
+
+oracle/reference.py（独立 Oracle，同步输出）：
+- SPEC_VERSION "1.0.2"；analyse() 返回 dict 增加 inputHash（输入 HTML
+  的 SHA-256，同一口径）与 spec_version；另接受可选 job_id 参数，
+  传入时才以 jobId 回显，Oracle 绝不自造 jobId（jobId 是传输层字段）。
+- compare_case 成功案比对字段增加 inputHash；main() 增加文档级门：
+  golden_expected.json 的 spec_version 必须等于 SPEC_VERSION，否则
+  直接 FAIL（不让 48 案对着错版规格通过）。
+- oracle/golden_expected.json：顶层 spec_version 1.0.2；40 条成功案
+  的 expected 各补 inputHash（由脚本按 entry.input.html 的 SHA-256
+  生成，非手写）；8 条错误案不补（Oracle 对错误案不返回报告）。
+  diff 恰好 41 行新增 + 1 行修改，格式未动。
+
+tests/property/compare.ts：cross-check 增加 inputHash / spec_version
+逐项比对（TS 侧由 sha256Utf8(html) 与 SPEC_VERSION 算出；Oracle 侧
+由 analyse() 返回）；jobId 不比（transport 层，analyseTs 不经过
+analyze()，见 §6 D3）。
+
+3. 改动（测试；断言只加严，未弱化）
+--------------------------------------------------------------------------------
+- 全部 analyze() 调用点传确定性 jobId：report.test.ts / sha256.test.ts /
+  report-facts.test.ts 用 'job-test-1'（脚本按括号平衡扫描改写，逐项
+  核对）；worker.test.ts 直接调用与 Worker 消息同 jobId（'job-a' /
+  'job-b' / 'job-c'），保持 RESULT 与直接调用 deep-equal；golden.test.ts
+  用 `job-<fixture_id>`，analyzeErrorCode 用 'job-test-error'。
+- 新增 5 条 FIX-02 断言（report.test.ts 新 describe 块）：
+  三字段齐全（inputHash 与 node:crypto 独立重算及已知值
+  2ebbbde8…0341 一致，specVersion == SPEC_VERSION == '1.0.2'）；
+  jobId 只改 jobId（其余字段不变）；inputHash 与策略无关、随输入变；
+  jobId 空串/缺失 fail-closed 抛 INVALID_RAGGED_GRID；
+  JSON 往返保留三字段。
+- worker.test.ts：逐字段点名处加三字段断言（jobId 与外层一致、
+  inputHash == sha256Utf8(fixture html)、specVersion 1.0.2）。
+- golden.test.ts：文档断言改为 frozen v1.0.2；witness 测试断言
+  result.jobId / inputHash（与手算 expected.inputHash 及独立重算
+  一致）/ specVersion。
+- tests/core 其余文件头注释与 tests/property/generator.ts 的规格
+  版本引用同步改 1.0.2。tests/e2e/ 一字未动（FIX-01 回归测试）。
+
+4. 改动（规格勘误 v1.0.2，md + docx 同步）
+--------------------------------------------------------------------------------
+docs/PROJECT_BOOK.md：
+- 封面 SPEC_VERSION 1.0.2；依赖基线 IMPLEMENTATION_PLAN.md v1.0.2；
+  新增勘误注 v1.0.2（2026-11-21，裁决者 Muse）：§6.1 补三字段、
+  §6.2 签名改为 analyze(input, jobId)、§9 补 inputHash 定义、
+  §3.1 trim 口径、主聊天裁决 §9 优先、R1 P1-02。
+- §3.1 格式处理行补“首尾 trim（仅去 ASCII 空白；U+00A0 保留）”
+  （只改文字；normalizeCellText 实现不动，FIX-03 的活）。
+- §6.1 AnalyzeResult 代码块补三字段；§6.2 签名改为
+  analyze(input, jobId) 并补 jobId 语义句；§9 补 inputHash 定义
+  （输入 HTML 原文的 SHA-256，UTF-8 字节，十六进制小写）与 jobId
+  语义句（调用方传入，同一 jobId 只对应一次分析）。
+docs/IMPLEMENTATION_PLAN.md：SPEC_VERSION、卷首权威、§7 交接 JSON
+模板示例 spec_version、文末权威均改 1.0.2；新增勘误注 v1.0.2。
+docx（四份：docs/ 与 bundle/ 各两份，改前两地字节一致）：
+- git 历史 / COORDINATOR_LOG.md / S0_REPORT.md 里没有留下可靠的
+  md→docx 生成方法（只记“md + docx 同步改”）；本机无 pandoc，
+  从 md 全量重排会丢原 docx 版式，故采用与 S0 相同的“同步改”做法：
+  只改 word/document.xml 内经核实连续的 <w:t> run 文本（定向替换，
+  每处断言恰好出现 1 次，否则 abort），新勘误注段落通过克隆 v1.0.1
+  勘误注段落并替换其两个 run 文本插入；zip 其余条目原样复制。
+  脚本为一次性脚本（.tmp-tmpdir/fix02_docx.py，未提交），方法记于此。
+- 核对：python-docx 抽全文——§6.1 代码块四行与 md 一字一致、
+  §6.2 签名与 jobId 句、§3.1 trim 句、§9 定义句、两份 v1.0.2 勘误注
+  均在位；LibreOffice 渲染两份 docx 均成功，页数 11 + 14（与 v1.0.1
+  时一致）。
+- 残留 1.0.1：仅 v1.0.1 勘误注原文内（PB docx 1 处、IP docx 3 处，
+  均为历史引用）与 md 同款；tests/e2e 两文件头引用 v1.0.1 未动
+  （本卡禁区）。
+
+bundle/ 与 ZIP：
+- bundle/ 四份规格与 docs/ 同步（改后两地字节一致）；SPEC_MANIFEST.json
+  重建：spec_version 1.0.2，generated 2026-11-21，5 文件 size + SHA-256
+  重算（IDEATION 26245 B 未变；PROJECT_BOOK.md 33197 B
+  9115f2b1…e344e8；PROJECT_BOOK.docx 59054 B 662f6ce6…55bb8a9；
+  IMPLEMENTATION_PLAN.md 38511 B f3f5d56b…575027b；
+  IMPLEMENTATION_PLAN.docx 63423 B 6ae7f22a…302e3348）。
+- P029_SPEC_BUNDLE.zip 重打（原顺序 6 文件）：164,465 B，
+  SHA-256 3e960210b34615bada6df02cfdae439a58972016351e15b8d8a3bae3da60adcf；
+  解包 6/6 与 bundle/ 字节一致。根目录副本同步重建（同一文件）。
+
+5. 验收（全部退出码 0；TMPDIR 均指到持久磁盘 .tmp-tmpdir）
+--------------------------------------------------------------------------------
+- npm run typecheck：exit 0（tsc --noEmit）。
+- npm run test:core：724/724（10 files；719 既有 + 5 新增 FIX-02 断言）。
+- npm run oracle：48/48 passed（0 failed；含新增的 inputHash 比对与
+  文档级 spec_version 门）。
+- npm run test:e2e：22 passed（20 既有 + FIX-01 的 2 条；33.2s）。
+- npm run test:e2e:perf：1 passed（18.8s）。
+- npm run build：exit 0（48 modules；Worker chunk
+  dist/assets/tablefork.worker-DyZY-1y_.js 25.35 kB）。
+- CLI 实测：npm run analyze -- --input fixtures/TFK-A.json
+  --out .tmp-tmpdir/fix02-TFK-A.json，exit 0；输出 JSON 含
+  jobId=cli-TFK-A、inputHash=2ebbbde88fa65509a6aac5e8c74884c56361f9442a7b4527fdf6fcdc7a9c0341
+  （与 sha256(html) 独立重算一致）、specVersion=1.0.2。
+- UI 导出实测（一次性 Playwright 脚本 .tmp-tmpdir/fix02_ui_check.mjs，
+  跑生产构建 vite preview，未改 tests/e2e）：顶栏“规格 v1.0.2”；
+  TFK-A 分析后页面证据 JSON 与下载的 tablefork-report-TFK-A.json
+  三字段一致——jobId=job-1（UI 的 job-<seq>）、inputHash 与 TFK-A
+  HTML 的 SHA-256 一致、specVersion=1.0.2。PASS。
+- Drive 核对：四份规格 + bundle ZIP 逐个回读，size + md5Checksum +
+  下载内容 md5 全部等于本地（见 §7）。
+
+6. 决定与说明
+--------------------------------------------------------------------------------
+D1. verify:release 本卡不跑：review/RELEASE_MANIFEST.json 是旧冻结
+    （base 4025061、spec 1.0.1）的清单，跑它必然 FAIL，与本卡改动无关；
+    重冻结卡再跑。scripts/verify_release.mjs 的 SPEC_VERSION 已先改
+    1.0.2，与新 manifest 一致。
+D2. Oracle 的 jobId 为可选回显参数：Oracle 不计算也不自造 jobId；
+    CLI 模式（npm run oracle）不传 job_id；cross-check 忽略 jobId，
+    只比 inputHash / spec_version（见 §2）。Worker/CLI/UI 三路的
+    jobId 由各自调用方传入，已逐路实测。
+D3. analyze() 的 jobId 校验在运行时 fail-closed（空串/缺失抛
+    INVALID_RAGGED_GRID），不只依赖 TS 类型：Worker/CLI 的 JS 调用
+    方若漏传也不会静默产出无 jobId 的报告。
+D4. docx 未从 md 重排生成（见 §4）：无可靠生成方法记录，定向 run
+    文本替换 + 渲染核对是与 S0 一致的做法；md 与 docx 已逐项核对一致。
+D5. e2e 运行写脏的易变文件（artifacts/logs/T012-cancel-probe.json、
+    artifacts/logs/T012-perf-browser.json、artifacts/screenshots/T012-*.png
+    共 7 个）已用 git checkout 恢复，不在提交内（与 FIX-01 做法一致）；
+    .tmp-tmpdir 已删除。
+
+7. Drive 核对（原位替换，文件 id 不变；2026-11-21 ~06:47 GMT）
+--------------------------------------------------------------------------------
+P029 文件夹 1_sqMEKpcMEMXfOBxK5PJwvAp6MHlnNTD
+- 01_project_book/PROJECT_BOOK.md
+  id 1NBXXTR9yy4942lHUjrrLxz4xvVCX1Rzr；33,197 B；
+  md5 8a30c9e3a7f0871d085af38817c4b536（Drive md5Checksum 与下载内容 md5 一致）
+- 01_project_book/PROJECT_BOOK.docx
+  id 1GOveEEjfpFxzv3ku-xQwy8lEPacgkgkp；59,054 B；
+  md5 0d97bec453f4a6a632f36e6e44ae20a6（一致）
+- 02_implementation_plan/IMPLEMENTATION_PLAN.md
+  id 1LLs5KGh8Ij4gQOiS59gbR091bbZLQjlr；38,511 B；
+  md5 a2ac90a1265f475c4d2c13f6c9544e51（一致）
+- 02_implementation_plan/IMPLEMENTATION_PLAN.docx
+  id 1BgnAoJYTVirmjs4KKI04DagRjnsALd7C；63,423 B；
+  md5 bdf7458c3f511e1e2bda079eb6b542a4（一致）
+- 根目录 P029_SPEC_BUNDLE.zip
+  id 1AzHZJJ-tiQFP-aN1VCeYD-NqCLpcMeMP；164,465 B；
+  md5 2ce75ae5a56e6b8ad8db928598537c42（一致）
+5/5 size + md5Checksum + 下载内容 md5 全部与本地相等。
+
+8. 遗留项
+--------------------------------------------------------------------------------
+- P1-01 已由 FIX-01 修复（本卡未碰）；P1-02 由本卡修复。
+  R2 仍须主聊天确认后才能发送（与 FIX-01 时一致）。
+- verify:release 待重冻结卡跑（见 D1）；artifacts/release/ 未动。
+- FIX-03（NBSP 对齐）待派：本卡只改了 §3.1 文字口径，
+  normalizeCellText 实现未动。
+- 既往 P2 记录问题未改动，留待终审。
+
+9. 提交
+--------------------------------------------------------------------------------
+- 修复提交：见 task_handoffs/P029-FIX-02.json 的 result_commit
+  （消息 "P029-FIX-02: report carries jobId/inputHash/specVersion (P1-02), spec v1.0.2"；
+  不含 handoff——handoff 须填该提交的完整 SHA，按 T012/T013/T014/FIX-01
+  既往做法另起一个 handoff 提交）。
+- handoff 提交：task_handoffs/P029-FIX-02.json 本身。

@@ -1,0 +1,90 @@
+# P029-T002 contract evidence log
+# Generated: 2026-11-21T00:21Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 57bbbdd (P029-T001: environment scaffold)
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T002 冻结数据契约与错误状态 — 只实现类型/错误码/Worker 协议，不写网格算法。
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm test -- --passWithNoTests (vitest run 4.1.12): exit 0
+  - "No test files found, exiting with code 0" — 尚无测试文件，属预期；只作为编译契约，不声称功能 PASS。
+- No external model API called; no Qoder; no password/key files touched.
+
+## 2. Files produced by this task (only these)
+- src/core/types.ts (new)
+- src/core/index.ts (new; T002 主控统一出口)
+- src/worker/protocol.ts (new)
+- artifacts/logs/T002-contract.txt (this file)
+- task_handoffs/P029-T002.json (second commit, see §6)
+
+## 3. Export inventory (from src/core/index.ts — the single public entry point)
+Types (all `export type`, verbatim from PROJECT_BOOK §6.1 unless marked 补充):
+- Strategy, HeaderStatus, CompareStatus, WitnessStatus
+- Cell, SlotFact, AnalyzeInput, CollisionProof, AnalyzeResult
+- ErrorCode (补充载体，见 §4)
+- TableForkError (补充，见 §4)
+- CollisionKind (补充，见 §4)
+Worker protocol types (from src/worker/protocol.ts):
+- AnalyzeRequestMessage, CancelMessage, WorkerRequestMessage
+- WorkerResultMessage, WorkerErrorMessage, WorkerResponseMessage, WorkerMessage
+Values / constants:
+- INPUT_SCHEMA = 'tablefork.input/v1', REPORT_SCHEMA = 'tablefork.report/v1', SPEC_VERSION = '1.0.1'
+- MAX_INPUT_BYTES = 65536, MAX_ROWS = 32, MAX_COLS = 12, MAX_DOM_CELLS = 128, MAX_SPAN = 8
+- ERROR_CODES (readonly tuple of all 7 codes, same order as ErrorCode)
+Functions (pure, no I/O):
+- isTableForkError(value: unknown): value is TableForkError
+- isWorkerRequestMessage(value: unknown): value is WorkerRequestMessage
+- isWorkerResponseMessage(value: unknown): value is WorkerResponseMessage
+
+## 4. Line-by-line对照 vs 冻结规格 (PROJECT_BOOK.md v1.0.1 §6.1 / §5.5 / §3.1; IMPLEMENTATION_PLAN.md §4.2)
+§6.1 types — 逐字段对照，无增减：
+- Strategy = 'ORIGIN_EMPTY' | 'REPEAT_VALUE' — 一致。
+- HeaderStatus = 'KNOWN' | 'UNKNOWN' — 一致。
+- CompareStatus = 'EXACT_MATCH' | 'EXACT_DIFF' | 'NOT_SUPPLIED' — 一致。
+- WitnessStatus = 'CERTIFIED_COLLISION' | 'NO_WITNESS_FOUND' | 'UNSUPPORTED' — 一致。
+- Cell { id: string; row: number; col: number; rowSpan: number; colSpan: number;
+  role: 'TH'|'TD'; scope: 'row'|'col'|null; text: string; section: 'thead'|'tbody' } — 9 字段全对，无增减。
+- SlotFact { row; col; cellId: string; rowHeaders: string[]; colHeaders: string[];
+  headerStatus: HeaderStatus; value: string } — 7 字段全对，无增减。
+- AnalyzeInput { schema: 'tablefork.input/v1'; html: string; suppliedMarkdown?: string;
+  strategy: Strategy } — 4 字段全对（含可选 suppliedMarkdown），无增减。
+- CollisionProof { sourceCellId; alternativeHtml; aGraphSha256; bGraphSha256;
+  markdownSha256; splitCost: number; headerAssociationChanged: boolean } — 7 字段全对，无增减。
+- AnalyzeResult { schema: 'tablefork.report/v1'; compare: CompareStatus;
+  witness: WitnessStatus; canonicalMarkdown: string; facts: SlotFact[];
+  proof?: CollisionProof; warnings: string[] } — 7 字段全对（含可选 proof），无增减。
+§5.5 / §4.2 错误枚举 — 7 个齐全，无增减：
+- INVALID_SPAN, INVALID_GRID_OVERLAP, INVALID_RAGGED_GRID, OVER_SIZE,
+  UNSUPPORTED_NESTED_TABLE, UNSUPPORTED_HEADER_SEMANTICS, CANCELLED.
+§6.2 / 计划 §4.2 Worker 协议 — 消息一览：
+- 请求：{ jobId, type: 'ANALYZE', payload: AnalyzeInput }；{ jobId, type: 'CANCEL' }。
+- 回复：{ jobId, type: 'RESULT', data: AnalyzeResult }；
+  { jobId, type: 'ERROR', code: ErrorCode, message: string }。
+- 主线程仅采纳 jobId 与最新输入版本完全一致的结果；取消不覆盖新结果（此为 T010 实现责任，协议层以类型 + 注释冻结）。
+
+补充（不在 §6.1 原文内，均为显式登记、非悄悄改规格）：
+- TableForkError { code: ErrorCode; message: string } + isTableForkError() — 为“报枚举错误”提供统一载体形状；§6.1 未定义错误对象形状。
+- INPUT_SCHEMA / REPORT_SCHEMA / SPEC_VERSION ('1.0.1') 常量 — schema 字面量与版本号取自 §6.1/§6.2/封面，冻结为常量防手写拼错。
+- MAX_INPUT_BYTES / MAX_ROWS / MAX_COLS / MAX_DOM_CELLS / MAX_SPAN — 取自 §3.1 输入上限表（64 KiB / 32 / 12 / 128 / span 1–8），冻结为常量。
+- CollisionKind = 'HEADER_ASSOCIATION_CHANGED' | 'STRUCTURAL_COLLISION' — 取自 §5.2/§4.2 的两行断言标签；仅当 proof.headerAssociationChanged 为 true 时取前者。
+- ERROR_CODES 只读元组 — 与 ErrorCode 同顺序，供穷尽检查与测试枚举。
+
+未发现规格类型冲突：§6.1 与 §5.5/§4.2/§3.1 可直接落地，无需回退、无需修订规格。
+未写网格算法：parse/grid/headers/flatten/witness/compare/records/report 均未创建，属 T003–T008。
+
+## 5. 约定（供后续任务直接使用，不再猜字段）
+- 源格坐标从 0 开始；cellId 按原点行、原点列、DOM 序稳定排序（c00, c01, ...）。
+- 标题路径为数组；缺失标题时对应路径为空数组且 headerStatus='UNKNOWN'，不得编造。
+- 数值一律以 string 携带，绝不解析为 JS Number（避免 17 位 ID 精度损坏）。
+- 后续任务一律 `import { ... } from './index'`（core 内）或 `'../core/index'`（core 外）；
+  不得在 index.ts 里放实现；实现文件挂载到本出口由 T013 集成时一次性处理。
+
+## 6. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): types.ts + index.ts + protocol.ts + this log file.
+- Step 2 (handoff commit): task_handoffs/P029-T002.json only.
+- Real SHAs recorded in task_handoffs/P029-T002.json (result_commit = step-1 SHA) and in the final report.
+
+## 7. Open issues
+- None blocking. Noted for later tasks, not T002 failures:
+  - T003–T008 实现文件尚不存在；npm run test:core / oracle / analyze / build 均 NOT_RUN 直至对应任务。
+  - WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).

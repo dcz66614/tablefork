@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G29",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th rowspan=\"2\" colspan=\"2\">组</th><th>X</th></tr><tr><th>Y</th></tr></thead><tbody><tr><td rowspan=\"2\">左</td><td>1</td><td>2</td></tr><tr><td>3</td><td>4</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G29"
+}

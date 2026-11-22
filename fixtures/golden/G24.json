@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G24",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>组</th><th>值</th><th>备注</th></tr></thead><tbody><tr><th scope=\"row\" rowspan=\"2\">甲组</th><td rowspan=\"2\">合</td><td>n1</td></tr><tr><td>n2</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G24"
+}

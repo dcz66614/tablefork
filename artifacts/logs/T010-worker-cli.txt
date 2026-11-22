@@ -1,0 +1,298 @@
+# P029-T010 evidence log — 四个合成预设、CLI 与唯一 Worker
+# Generated: 2026-11-21T01:35Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 371cba0 (T009-FIX-01 after coordinator's one-line comment fix).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T010 四个合成预设、CLI 与唯一 Worker — src/worker/tablefork.worker.ts,
+#   cli/analyze.ts, fixtures/TFK-A..D.json, tests/core/t010-temp.test.ts
+# Environment: Node v24.22.1, npm 10.9.4, Vitest 4.1.12, Vite 7.3.8,
+#   Playwright Chromium 159.0.8154.6, tsx 4.23.15.
+# No external model API called; no Qoder; no password/key files touched.
+# git status at log time: only T010 outputs are new (cli/, fixtures/,
+#   src/worker/tablefork.worker.ts, tests/core/t010-temp.test.ts, this log);
+#   tracked files unmodified (git diff empty); S0_REPORT.md and
+#   COORDINATOR_LOG.md untouched.
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run analyze -- --input fixtures/TFK-A.json --out artifacts/reports/TFK-A.json: exit 0
+  (re-run at 01:35Z after the CLI type fix; the report file it wrote is a CLI
+  run product and is NOT committed — see §7 J-T010-7; its SHA-256 is in §2.)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run build (tsc --noEmit && vite build, vite 7.3.8): exit 0
+  dist/index.html 0.41 kB, index-*.css 5.66 kB, index-*.js 269.83 kB (gzip 86.75 kB);
+  48 modules transformed; built in 1.85s.
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 0
+  Test Files: 7 passed (7). Tests: 170 passed (170), 0 failed.
+  (Baseline before this card was 157/157; this card adds 13 tests in
+  tests/core/t010-temp.test.ts, 157 + 13 = 170.)
+- Extra evidence (NOT card acceptance commands, run for this log):
+  - Standalone tsc of cli/analyze.ts (tsconfig does not include cli/, see
+    §7 J-T010-5): exit 0 after one fix (see §8 item 2).
+  - Standalone tsc of src/worker/tablefork.worker.ts with the same flags: exit 0.
+  - Browser check /tmp/t010-browser-check.cjs (Playwright Chromium 159.0.8154.6
+    against `npx vite --host 127.0.0.1 --port 5199`): exit 0, 8/8 checks passed
+    (see §5). Vite dev stopped afterwards (fuser -k 5199/tcp; curl then 000).
+
+## 2. Files produced by this task (only these)
+- src/worker/tablefork.worker.ts (new) — the ONLY Worker file in the project.
+- cli/analyze.ts (new) — Node offline CLI (tsx run, `npm run analyze`).
+- fixtures/TFK-A.json, fixtures/TFK-B.json, fixtures/TFK-C.json,
+  fixtures/TFK-D.json (new) — generated from src/ui/presets.ts (see §4).
+- tests/core/t010-temp.test.ts (new; header-marked T010 TEMPORARY — to be
+  taken over by T011) — 13 tests.
+- artifacts/logs/T010-worker-cli.txt (this file).
+- task_handoffs/P029-T010.json (second commit, see §9).
+NOT modified (per the card): src/ui/*, src/main.tsx, src/core/*, oracle/*,
+docs/, package.json, package-lock.json, bundle/, S0_REPORT.md,
+COORDINATOR_LOG.md. `dist/` is build output (git-ignored) and was rebuilt,
+not committed. `artifacts/reports/TFK-{A,B,C}.json` are CLI run products:
+NOT committed, deleted from disk before the step-1 commit (regenerable with
+one `npm run analyze` each; summaries + file SHA-256 below, §3/§6).
+NOT created: src/data/presets.ts — see §7 J-T010-6 for why it was omitted.
+
+## SHA-256 of the produced source files (sha256sum, real output)
+- be6c04f3775ab11ec489190f1b617e57138e170462d2496cfe113dd442992922  src/worker/tablefork.worker.ts
+- d5bdeb168b6741998e27023647208bb8c2f48a8a4255837ee24f5e79642dac42  cli/analyze.ts
+- b073ef6cb38917591296ee4b20271c8ab8f3b98f094741f88815f7fd725be0e5  fixtures/TFK-A.json
+- 07c9964f8465783d8227a6830d3021199491d19ea32be375094dbea3283a6da9  fixtures/TFK-B.json
+- 96e15f386b015a2160d607c497fb4583887c8f39dc8ad61ef13b3abd78550ebb  fixtures/TFK-C.json
+- 4900fe04065f741784bff145860f5fdde477ab6481a4d398e8917550650b77da  fixtures/TFK-D.json
+- 3ed2464f39f30735f86f068c876f35536e88b26ac82ad226ae831e2bbf226c53  tests/core/t010-temp.test.ts
+
+## 3. CLI / Worker field-by-field consistency table
+Both paths call the same kernel: CLI calls analyze() from src/core/report.ts;
+the Worker calls the same analyze() (imported from ../core/report). No second
+implementation exists anywhere (grep: no 'node:crypto' in either new file;
+Worker imports only ../core/report, ../core/types, ./protocol; CLI imports
+only node:fs/promises, node:path, ../src/core/report, ../src/core/types).
+
+Browser proof (real Chromium, /tmp/t010-browser-check.cjs, exit 0): for each
+of TFK-A/B/C the Worker's RESULT data is JSON.stringify-equal to the CLI
+report file artifacts/reports/TFK-{A,B,C}.json, i.e. every field identical
+(schema, compare, witness, canonicalMarkdown, facts, proof incl. all three
+SHA-256 + alternativeHtml, warnings). Unit proof (t010-temp.test.ts): for
+each of TFK-A/B/C the Worker's RESULT data is toEqual() to a direct
+analyze() call in the same process (13/13 tests pass, incl. the pinned
+TFK-A full hashes below).
+
+| preset | CLI exit | Worker reply | witness | compare | facts | proof.source | splitCost | hdrChanged | aGraph(8) | bGraph(8) | md(8) | CLI report file SHA-256 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| TFK-A | 0 | RESULT | CERTIFIED_COLLISION | NOT_SUPPLIED | 3 | c01 | 1 | true | dbd4b9ce | a9ec182c | 83da5104 | 1c671a1a…eadff (1587 B) |
+| TFK-B | 0 | RESULT | CERTIFIED_COLLISION | NOT_SUPPLIED | 2 | c02 | 1 | true | 7671d3ba | 693b1db0 | 07ee8352 | af93c15b…21f (1228 B) |
+| TFK-C | 0 | RESULT | NO_WITNESS_FOUND | NOT_SUPPLIED | 4 | — (proof absent) | — | — | — | — | — | 38347d1f…2fd2 (1235 B) |
+| TFK-D | 1 | ERROR | — (no RESULT) | — | — | — | — | — | — | — | — | (no file written) |
+
+TFK-A full hashes (match T005-witness.txt §5/§6 and T008-records.txt §5 exactly):
+  aGraphSha256 = dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+  bGraphSha256 = a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+  markdownSha256 = 83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+TFK-B full hashes (match T009-ui.txt §5 prefixes 7671d3ba… / 07ee8352…):
+  aGraphSha256 = 7671d3ba… (full value in the CLI report file; prefix verified in test)
+  markdownSha256 = 07ee8352… (full value in the CLI report file; prefix verified in test)
+TFK-D (both paths agree on the code, not just the fact of failure):
+  CLI stderr: ERROR UNSUPPORTED_HEADER_SEMANTICS: <td> uses a headers attribute
+    (offset 80); explicit headers references are not supported — exit 1.
+  Worker: { jobId, type: 'ERROR', code: 'UNSUPPORTED_HEADER_SEMANTICS',
+    message: same text }.
+
+Canonical Markdown (ORIGIN_EMPTY, identical in CLI and Worker outputs):
+- TFK-A: "| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n"
+- TFK-B: "| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n|  | b |\n"
+- TFK-C: "| 项目 | 数值 |\n| --- | --- |\n| a | 1 |\n| b | 2 |\n"
+Warnings: TFK-A 1 ("3 个数据槽的标题未知…"), TFK-B 0 (both facts' headers are
+KNOWN: rowHeaders ["部门X"], colHeaders ["项目"/"数值"]), TFK-C 2
+(NO_WITNESS_FOUND note + unknown-header note).
+
+## 4. The four presets: source, Golden mapping, output summary
+Generation method (single source, coordinator decision): fixtures were NOT
+hand-written. /tmp/gen-t010-fixtures.mts (NOT committed; run with
+`npx tsx /tmp/gen-t010-fixtures.mts`) imports PRESETS from src/ui/presets.ts
+and writes each fixture with that preset's html verbatim. Verified after
+generation: for all four, fixture input.html === presets.ts html (strict
+equality, script output "identical: true" x4). No second copy of preset HTML
+exists anywhere in the repo (no src/data/presets.ts — see §7 J-T010-6).
+All four fixtures use input.strategy = ORIGIN_EMPTY (the default strategy;
+REPEAT_VALUE is exercised by the UI, see §7 J-T010-1).
+
+Preset HTML SHA-256 (UTF-8 bytes of the html string; full HTML is in
+src/ui/presets.ts and in fixtures/TFK-{A,B,C,D}.json):
+- TFK-A: 2ebbbde88fa65509a6aac5e8c74884c56361f9442a7b4527fdf6fcdc7a9c0341
+- TFK-B: 3da5e6bb71a5239c7dc5a0f336d68f44af1846b560c2870ee5855ff4d17c64f6
+- TFK-C: e8278727c2dd843faa9eae58592f1efb67c8d533b3b41c8ac49f4cf12e1ac02b
+- TFK-D: 5d0eb6cab1a3d9cd2a81a47dfcef8c0700f7d81397ac422c33b2e937b8efae63
+
+Golden mapping (checked mechanically against oracle/golden_expected.json:
+for each preset, the list of Golden fixtures whose input.html is
+byte-identical; G09/G17/G45/G01 html quoted from that file):
+- TFK-A → expected_ref "G09". Exact match: ['G09'] — the fixture html is
+  byte-identical to G09's html (project book §6.3 example). G09 witness
+  ORIGIN_EMPTY: CERTIFIED_COLLISION, source c01. This card's CLI/Worker
+  output agrees (source c01, same three hashes as T005/T008).
+- TFK-B → expected_ref "NOT_MAPPED". No byte-identical Golden: exact-match
+  list []. Nearest class is G17–G24 (rowspan=2/3, scope=row): G17's html is
+  the same structural pattern (thead 项目/数值 + th scope=row rowspan=2 in
+  tbody) but different cell text （部门/研发/甲/乙 vs 项目/数值/部门X/a/b),
+  so it is NOT the same fixture and was not forced. Output: CERTIFIED_
+  COLLISION, source c02, headerAssociationChanged=true (ORIGIN_EMPTY).
+- TFK-C → expected_ref "NOT_MAPPED". No byte-identical Golden: []. Nearest
+  class is G01–G08 (flat, no merge): G01's html is a 2x2 all-td table
+  (A/B/C/D, no thead), structurally the same class but different html.
+  Output: NO_WITNESS_FOUND, proof omitted.
+- TFK-D → expected_ref "NOT_MAPPED". No byte-identical Golden: []. Nearest
+  is G45 (same error code UNSUPPORTED_HEADER_SEMANTICS): G45's html is a
+  single-cell table `<td headers="h1">v</td>` with no thead, while TFK-D is
+  a thead + headers= on two td cells — same rejection class, different
+  fixture. Output: ERROR UNSUPPORTED_HEADER_SEMANTICS (exit 1 / ERROR msg).
+
+## 5. Cancel and race tests: steps and results
+Implementation (src/worker/tablefork.worker.ts): createWorkerMessageHandler
+returns a pure async handler with its own state (latestJobId, generation
+counter, cancelled set); it never touches DOM/Worker globals. Bottom wiring
+is `typeof self !== 'undefined'` + postMessage-is-a-function guarded
+(self.onmessage → handler; Node import does not wire, verified by the
+Vitest run: typeof self is undefined in Node).
+
+Steps (unit, tests/core/t010-temp.test.ts, 13 tests, all pass):
+1. ANALYZE TFK-A → 1 RESULT, deep-equal to direct analyze() (full hashes §3).
+2. ANALYZE TFK-B → RESULT, source c02, headerAssociationChanged=true.
+3. ANALYZE TFK-C → RESULT, NO_WITNESS_FOUND, 'proof' in data === false.
+4. ANALYZE TFK-D → 1 ERROR, code UNSUPPORTED_HEADER_SEMANTICS (enum member).
+5. Invalid inputs (bad schema, bad strategy, nested table, missing payload)
+   → each 1 ERROR, code an ErrorCode enum member (INVALID_RAGGED_GRID for
+   the entry-validation cases per J-T008-2, UNSUPPORTED_NESTED_TABLE).
+6. Malformed messages (null, string, missing jobId, numeric jobId, empty
+   jobId) → 0 messages posted (no jobId to answer to).
+7. Unknown type { type: 'PING' } → 1 ERROR, INVALID_RAGGED_GRID.
+8. CANCEL: handler(ANALYZE job-cancel) started without await, then
+   handler(CANCEL job-cancel) awaited, then await the ANALYZE promise →
+   0 messages. The old job produces no RESULT/ERROR.
+9. CANCEL of a never-seen jobId → 0 messages.
+10. Race: handler(ANALYZE job-old TFK-A) + handler(ANALYZE job-new TFK-B)
+    started without awaiting either, then await both → exactly 1 message:
+    job-new RESULT (proof source c02). Old job suppressed by the version guard.
+11. Stale cancel: same as (10) plus handler(CANCEL job-old) before awaiting
+    → still exactly 1 message: job-new RESULT. Cancelling a superseded job
+    does not kill the latest job (see §7 J-T010-4).
+12. Fixture/preset identity: all four fixture html === presets.ts html.
+13. Worker inventory: readdirSync(src/worker) === [protocol.ts,
+    tablefork.worker.ts] — exactly one Worker file.
+
+Steps (real browser, /tmp/t010-browser-check.cjs, exit 0, 8/8):
+- Page: vite dev on 127.0.0.1:5199 (started for the check, killed after).
+  Chromium 159.0.8154.6. Worker constructed in-page as
+  new Worker('/src/worker/tablefork.worker.ts', { type: 'module' }).
+- TFK-A/B/C ANALYZE → RESULT JSON.stringify-equal to the CLI report files (§3).
+- TFK-D ANALYZE → ERROR UNSUPPORTED_HEADER_SEMANTICS.
+- CANCEL: postMessage ANALYZE + CANCEL for the same jobId in one JS task,
+  wait 600 ms → 0 messages for that job.
+- Race: postMessage ANALYZE job-old (TFK-A) + ANALYZE job-new (TFK-B) in one
+  JS task, wait → exactly 1 message: job-new RESULT.
+- Zero remote requests: 44 requests total, all http://127.0.0.1:5199/…
+  (vite dev client, React deps, src/* modules incl. tablefork.worker.ts and
+  the core modules it imports); 0 remote.
+
+## 6. CLI runs (all four presets + exit-code probe)
+- npm run analyze -- --input fixtures/TFK-A.json --out artifacts/reports/TFK-A.json: exit 0
+- npm run analyze -- --input fixtures/TFK-B.json --out artifacts/reports/TFK-B.json: exit 0
+- npm run analyze -- --input fixtures/TFK-C.json --out artifacts/reports/TFK-C.json: exit 0
+- npm run analyze -- --input fixtures/TFK-D.json --out artifacts/reports/TFK-D.json: exit 1
+  (stderr: ERROR UNSUPPORTED_HEADER_SEMANTICS: <td> uses a headers attribute
+  (offset 80); explicit headers references are not supported; no file written)
+- npm run analyze -- --help: exit 0 (usage printed to stdout).
+- Missing input file (fixtures/nope.json): exit 2
+  (stderr: ERROR CLI_USAGE: cannot read --input …: ENOENT…).
+- Missing --out: exit 2 (stderr: ERROR CLI_USAGE: missing required --out <report.json>).
+- Invalid JSON input (/tmp/bad.json): exit 2
+  (stderr: ERROR CLI_USAGE: … is not valid JSON: Bad control character…).
+- Output to a non-existent nested directory (/tmp/t010-nested/deep/report.json):
+  exit 0; the file is byte-identical to artifacts/reports/TFK-A.json
+  (mkdir -p behaviour verified).
+- Fixture with a bad strategy (ad-hoc /tmp file, strategy 'NOPE'): exit 2,
+  CLI_USAGE (fixture shape is a CLI-layer concern; a well-formed fixture
+  whose table is rejected exits 1 — see TFK-D).
+Exit-code table (nailed down, §7 J-T010-3):
+  0 success (report written); 1 table rejected by analyze() — stderr
+  `ERROR <ErrorCode>: <message>`; 2 CLI-layer failure — stderr
+  `ERROR CLI_USAGE: <message>`; --help exits 0.
+
+## 7. 裁决小节（§7：规格未钉死的点）
+- J-T010-1（fixture 策略选择）：四个 fixture 的 input.strategy 统一为
+  ORIGIN_EMPTY（默认策略）。REPEAT_VALUE 由 UI 覆盖：T009 已在真实浏览器
+  里验证四个预设 × 两种策略（TFK-A/B 两种策略下仍为碰撞，TFK-C/D 不变），
+  本卡不重复造第二套 fixture；CLI 对任一策略的 fixture 都能跑（validate
+  接受两个策略值），T011 的 Golden 会覆盖两种策略。
+- J-T010-2（Worker 为何让步一个 macrotask）：analyze() 体内没有 await，
+  调用后同步完成；若处理器在收到 ANALYZE 后立即执行，RESULT 会在同一
+  microtask 检查点发出，抢在随后到达的 CANCEL / 新 ANALYZE 之前，使取消
+  与竞态守卫在真实浏览器里永远观测不到。因此处理器先
+  `await new Promise(r => setTimeout(r, 0))` 再执行 analyze()；让步后
+  同一任务里接连 post 的 CANCEL / ANALYZE 先被处理，旧 job 在执行后被
+  版本号守卫或取消集合压住（浏览器实测 §5 证实）。代价约 1 个定时器
+  tick；让步后还会二次确认（generation / latestJobId / cancelled）才
+  执行 analyze()，省一次无用计算。主线程的“只采纳最新 jobId”仍是
+  T013 的接线责任；Worker 侧守卫是纵深防御，不是替代。
+- J-T010-3（CLI 退出码口径）：0 成功；1 表格被 analyze() 拒绝（stderr
+  为枚举错误码 + message，不写输出文件）；2 CLI 层失败（参数缺失/未知
+  参数、输入文件读不到、JSON 解析失败、fixture 结构不符；stderr 为
+  `ERROR CLI_USAGE: …`，不是枚举码——因为这不是表格错误而是调用错误）；
+  --help 打印用法到 stdout，退出 0。TFK-D 的 exit 1 是预期行为（表格
+  本身被拒绝），不是 CLI 故障。
+- J-T010-4（CANCEL 的版本号口径）：取消只在被取消的 job 正是当前最新
+  job 时才递增版本号；取消一个已被取代的旧 job 只登记进 cancelled 集，
+  绝不碰版本号——否则会误杀最新 job 的结果（单元测试第 11 项钉死）。
+  同理，ANALYZE 同一 jobId 复用时会清除该 jobId 的旧取消记录（新分析
+  不应被上一轮的 CANCEL 压住）。
+- J-T010-5（cli/ 不在 typecheck 覆盖内）：T001 冻结的 tsconfig.json
+  include 只有 src/、vite.config.ts、playwright.config.ts，所以
+  `npm run typecheck`（tsc --noEmit）不检查 cli/analyze.ts。本卡未改
+  tsconfig（不在输出清单内）；改用同样 strict 的独立 tsc 命令对
+  cli/analyze.ts 与 src/worker/tablefork.worker.ts 各跑一次，均为
+  exit 0（命令见 §1）。建议 T013 把 cli/ 纳入 tsconfig include，或把
+  独立 tsc 检查写进发布验证脚本。
+- J-T010-6（src/data/presets.ts 省略的理由）：计划 §6 卡片输出清单里
+  的 src/data/presets.ts 若新建，会是预设 HTML 的第二份数据，与
+  src/ui/presets.ts（T009 已登记为单一来源）漂移。按任务卡的协调决定，
+  本卡没有新建它，也没有写薄 re-export——fixtures 已由生成脚本直接从
+  src/ui/presets.ts 取数，re-export 没有增加任何调用方（CLI 读 fixture
+  JSON、Worker 不读预设、UI 直接 import src/ui/presets.ts），多一层
+  间接只会多一个漂移点。如 T013 集成时确有调用方需要，再补 re-export。
+- J-T010-7（artifacts/reports/*.json 不提交）：它们是 CLI 运行产物，
+  一条命令即可精确重建（§6），且 TFK-D 本来就不产生文件；提交它们会
+  把“某次运行的输出”误当成冻结证据。本卡提交前已从磁盘删除；本日志
+  §2/§3 留有每份报告的字节数与 SHA-256，足以复核。验收命令本身写出
+  的 TFK-A.json 同样按此处理。
+- J-T010-8（无效消息的口径）：jobId 不是非空字符串的消息无法按协议
+  回 ERROR（无处投递），静默丢弃；未知 type 的消息（jobId 已知）回
+  ERROR INVALID_RAGGED_GRID（沿用 J-T008-2 的兜底桶口径）；analyze()
+  抛出的非 TableForkError（内部不一致，如哈希复核失败）同样以该兜底
+  码回 ERROR，但消息正文写明 "internal error (not an input error)"，
+  不把内部错误伪装成输入错误。
+- J-T010-9（UI 接线留待 T013）：本卡没有改 src/ui/* 与 src/main.tsx；
+  UI 目前在主线程直调 analyze()（经 T009-FIX-01 后的浏览器安全内核，
+  不再经 analyzeLocal.ts 适配器——该文件已被 T009-FIX-01 删除）的现状
+  保持不变。Worker 的接线（new Worker + jobId 采纳 + 取消按钮）是
+  T013 的集成任务；本卡的 Worker 已可直接被 T013 挂载（协议与
+  protocol.ts 一致，浏览器实测已通过）。
+
+## 8. Issues（需上游 / 后续任务处理）
+- ISSUE-T010-1（T013）：UI 接入 Worker 未做（本卡按要求未改 UI）；
+  T013 挂载时须实现主线程的 jobId/版本号采纳（只应用与最新输入版本
+  一致的结果）与取消按钮，并重跑本卡的浏览器检查（/tmp 脚本未提交，
+  步骤见 §5；T012 的 E2E 会覆盖取消/竞态交互）。
+- ISSUE-T010-2（已修复，本卡内）：CLI 初版独立 tsc 报错 3 处
+  （validateFixture 里经由 const 箭头函数 fail() 的调用不能使 TS 收窄
+  unknown 字段，TS2322）。改为直接 throw 后独立 tsc exit 0；CLI 行为
+  不变（4 预设 + 退出码探针重跑后结果与修复前一致）。
+- ISSUE-T010-3（T013）：tsconfig include 未含 cli/（J-T010-5）；建议
+  纳入或在发布验证里加独立 tsc 检查。
+- ISSUE-T010-4（说明）：Worker 的取消/竞态守卫依赖 J-T010-2 的
+  macrotask 让步；若将来 analyze() 内部引入真正的异步 I/O，该让步
+  仍可保留（无害），守卫逻辑不变。
+- ISSUE-T010-5（说明）：TFK-B/C/D 在 48 Golden 中无逐字对应的
+  fixture（§4）；它们的 Golden 级覆盖由 T011 补（T011 不得由 TS 输出
+  回填 Golden）。
+
+## 9. Handoff
+- Step-1 commit (this log + worker + CLI + 4 fixtures + temp test): SHA
+  recorded in task_handoffs/P029-T010.json as result_commit (written after
+  the step-1 commit).
+- Step-2 commit (handoff JSON only): separate commit; SHA reported to the parent.

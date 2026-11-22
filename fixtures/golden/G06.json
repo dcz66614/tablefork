@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G06",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>甲</th><th>乙</th></tr></thead></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G06"
+}

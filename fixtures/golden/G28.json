@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G28",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td rowspan=\"2\">上</td><td>a</td></tr><tr><td>b</td></tr><tr><td rowspan=\"2\">下</td><td>c</td></tr><tr><td>d</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G28"
+}

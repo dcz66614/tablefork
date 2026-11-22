@@ -1,0 +1,171 @@
+P029 TableFork — T009-FIX-01 证据日志
+======================================
+任务：把 witness.ts 的 node:crypto 换成浏览器安全实现，并让 UI 改回直接调用 analyze()。
+规格：v1.0.1。基线：abaff58（T009 工作台已合并）。工作树开始前干净
+（仅 S0_REPORT.md、COORDINATOR_LOG.md 未跟踪，未碰）。
+日期：2026-11-21（GMT）。执行：全新会话，无旧会话记忆依赖。
+
+## 1. 改动清单（git diff --stat）
+- 新增 src/core/sha256.ts（纯 TypeScript 同步 SHA-256，FIPS 180-4）
+- src/core/witness.ts：只换哈希原语（删 node:crypto import，改用 ./sha256；
+  见证搜索、选择顺序、图哈希口径、证书判定一字未动；导出的 sha256Utf8
+  名字与同步签名不变，改为 re-export）
+- src/core/report.ts：analyze() 内部复核改用共享同步函数；analyze() 保持
+  async 签名；sha256Utf8WebCrypto 保留为薄包装（见 §3 二选一决定）
+- src/ui/App.tsx：直接调用 analyze()；A/B 网格由核心 parse+grid 只读重算；
+  kind 由 proof.headerAssociationChanged 经核心 collisionKindOf 取；
+  NO_WITNESS_FOUND 的 reason 直接复用核心 findWitness 返回值
+  （不重复实现搜索逻辑；仅无见证时为取 reason 再调一次）
+- 删除 src/ui/analyzeLocal.ts（429 行，全部是见证复现 + analyze 流程复现，
+  无其他 UI 专用内容，故整个文件删除）
+- 新增 tests/core/t009fix01-temp.test.ts（8 个测试，T009-FIX-01 新增，
+  待 T011 接管；未改动已有临时测试文件）
+- 未碰：oracle/*、docs/、bundle/、package*、src/ui/presets.ts、6 张 T009 截图、
+  S0_REPORT.md、COORDINATOR_LOG.md。未调用外部模型 API，未用 Qoder，
+  未碰密码/密钥文件。
+
+## 2. SHA-256 实现来源与选择理由
+- 来源：FIPS 180-4 SHA-256 规范手写实现（src/core/sha256.ts）。
+  64 轮压缩函数，标准 K 常量（§4.2.2）与初始 H 值（§5.3.3），
+  按规范逐字实现，无第三方依赖、无复制粘贴的外部代码库。
+- 为什么不用 WebCrypto：witness 的见证搜索是同步的，
+  crypto.subtle.digest 是异步的，无法直接替换。
+- 为什么不用 node:crypto：项目书 §6.2 公共浏览器内核要求无 Node 专属调用；
+  `import { createHash } from 'node:crypto'` 使 vite build 失败
+  （`"createHash" is not exported by "__vite-browser-external"`，协调员已复现）。
+- UTF-8 编码：TextEncoder（浏览器 / Node / Vitest 三处均有，与 Node 'utf8'
+  编码一致：孤立代理项按 U+FFFD 计）。
+- 本文件不 import 任何 Node 模块，不依赖 WebCrypto；
+  浏览器 + Node + Vitest 三处都能跑。输出 hex 小写，签名 (text) => string，
+  与原用法一致。
+- 独立核对：实现写完后先用 /tmp/t009fix01-sha-check.ts 对照 Node createHash
+  跑 13 例（含填充边界 55/56/63/64/119/120/128 字节、孤立代理项、代理对、
+  CJK、emoji、100 万个 'a'），13/13 一致，exit 0，才接入 witness。
+
+## 3. report.ts 的 WebCrypto 助手：二选一决定
+- 决定：留作薄包装（不删除）。
+- 理由：sha256Utf8WebCrypto 是已导出的公共助手，t008 临时测试
+  （tests/core/t008-temp.test.ts）import 它；删除会断测试。
+  新实现：`return sha256Sync(text)`，直接委托给共享同步函数，
+  不再走 crypto.subtle.digest。analyze() 内部复核改用同一同步函数，
+  不再依赖 crypto.subtle 在调用环境中存在。
+- 诚实说明：复核现在与 witness 用同一实现算两遍——它仍能捕获
+  “proof 与 canonicalMarkdown / A 图不一致”的装配错误，
+  但不再是两个独立实现的交叉核对；与 node:crypto / WebCrypto 的
+  等价性改由已知向量测试钉死（见 §4、§5）。
+
+## 4. 已知向量（改前改后对照）
+向量来源：FIPS 180-4 / NIST 已知答案。改前值 = 改前 witness.sha256Utf8
+（node:crypto），改后值 = 改后 witness.sha256Utf8（纯 TS 实现），
+对照值 = Node createHash（/tmp/t009fix01-pre.ts 改前跑，/tmp/t009fix01-post.ts 改后跑）。
+
+| 输入 | 改前 witness | 改后 witness | Node 对照 | 结论 |
+|---|---|---|---|---|
+| '' (0 字节) | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 | 相同 | 一致 |
+| 'abc' | ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad | ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad | 相同 | 一致 |
+| 56 字节 'abcdbcdecdef…' | 248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1 | 248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1 | 相同 | 一致 |
+| 100 万个 'a' | cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0 | cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0 | 相同 | 一致 |
+
+## 5. 对照批（Node createHash 逐字节比对新实现）
+改前改后同一脚本（/tmp/t009fix01-pre.ts / -post.ts），全部逐字节一致：
+
+| 输入 | UTF-8 字节 | 改前 hash | 改后 hash | 结论 |
+|---|---|---|---|---|
+| 空串 | 0 | e3b0c442…2b855 | e3b0c442…2b855 | 一致 |
+| 短 ASCII 'hello tablefork' | 15 | 493d2bd9…066d02aa | 493d2bd9…066d02aa | 一致 |
+| CJK '产品2026预算成本甲乙丙' | 31 | 32ccf29f…80c8b51 | 32ccf29f…80c8b51 | 一致 |
+| A 图（§6.3，879 字节） | 879 | dbd4b9ce…de157d | dbd4b9ce…de157d | 一致 |
+| B 图 ORIGIN_EMPTY（985 字节） | 985 | a9ec182c…38bc5 | a9ec182c…38bc5 | 一致 |
+| B 图 REPEAT_VALUE（991 字节） | 991 | ba552bb4…e1bd1 | ba552bb4…e1bd1 | 一致 |
+| Markdown ORIGIN_EMPTY | 87 | 83da5104…38c1 | 83da5104…38c1 | 一致 |
+| Markdown REPEAT_VALUE | 103 | e97edc1b…bdffb | e97edc1b…bdffb | 一致 |
+
+§6.3 例三哈希（改后 analyze() 实测，与 T005/T008 记录值逐字节相同）：
+- aGraph：dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+- bGraph ORIGIN_EMPTY：a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+- bGraph REPEAT_VALUE：ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1
+- markdown ORIGIN_EMPTY：83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+- markdown REPEAT_VALUE：e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb
+
+## 6. 8/8 等价性（改后 analyze() vs 改前记录值）
+方法：改前用 /tmp/t009fix01-pre.ts 把 4 预设 × 2 策略的 analyze() 全量结果
+（JSON.stringify 全文，含 proof 三哈希 + alternativeHtml + facts + warnings）
+存入 /tmp/t009fix01-pre-results.json；改后用同一脚本（仅改输出路径）
+重跑并逐字节 diff（node 比对，exit 0）。
+结果：8/8 IDENTICAL（TFK-A/B/C/D × ORIGIN_EMPTY/REPEAT_VALUE 全文逐字节相同）。
+逐项（与 T009-ui.txt §5 记录一致）：
+- TFK-A ORIGIN_EMPTY：CERTIFIED_COLLISION，源格 c01，splitCost 1，HEADER_ASSOCIATION_CHANGED
+- TFK-A REPEAT_VALUE：CERTIFIED_COLLISION，源格 c00，splitCost 1，HEADER_ASSOCIATION_CHANGED
+- TFK-B ORIGIN_EMPTY：CERTIFIED_COLLISION，源格 c02，splitCost 1，HEADER_ASSOCIATION_CHANGED
+- TFK-B REPEAT_VALUE：CERTIFIED_COLLISION，源格 c02，splitCost 1，STRUCTURAL_COLLISION
+  （headerAssociationChanged=false）
+- TFK-C ORIGIN_EMPTY / REPEAT_VALUE：NO_WITNESS_FOUND
+  （reason: no merged cells in the table (all cells are 1x1); no single-split candidate exists）
+- TFK-D ORIGIN_EMPTY / REPEAT_VALUE：抛错一字相同：
+  UNSUPPORTED_HEADER_SEMANTICS:<td> uses a headers attribute (offset 80);
+  explicit headers references are not supported
+
+## 7. 验收命令与真实退出码（全部真实运行）
+- npm run typecheck：exit 0（改后；改前基线亦为 exit 0，未单独重录）
+- npm run test:core：exit 0，157/157 通过（改前 149/149；新增 8 个测试，
+  6 个测试文件全部通过：t003 67、t004 19、t005 17、t007 29、t008 17、
+  t009fix01 8——合计 157）
+- npm run build：exit 0（vite build 48 modules，dist/assets/index-BnBdJhrM.js
+  269.83 kB / gzip 86.75 kB）。关键证明：
+  * grep -ri "node:crypto|__vite-browser-external" dist/：无匹配
+  * grep "from 'node:" src/：仅 sha256.ts 头注里的文字提及，无真实 import
+  * import 链真实存在：src/main.tsx → App（./ui/App）→ analyze
+    （src/ui/App.tsx:35 `import { analyze } from '../core/report'`，
+    :160 `await analyze({...})`）
+- npx tsx /tmp/t009fix01-sha-check.ts（新实现 vs Node，13 例）：exit 0
+- npx tsx /tmp/t009fix01-pre.ts（改前基线）：exit 0
+- npx tsx /tmp/t009fix01-post.ts（改后对照）+ node 全文 diff：exit 0，8/8 IDENTICAL
+- node /tmp/t009-browser-check.cjs（T009 原脚本，31 项，vite preview 生产构建，
+  本地 Chromium）：exit 0，31/31 PASS（见 §8）
+- node /tmp/t009-b-check.cjs（T009 原脚本，TFK-B 双策略 + TFK-A REPEAT_VALUE）：exit 0
+  B ORIGIN_EMPTY header-changed=1；切策略后 certified=0；B REPEAT_VALUE
+  STRUCTURAL_COLLISION=1、header-changed=0；A REPEAT_VALUE certified、header-changed=1
+- node /tmp/t009fix01-ui-sweep.cjs（新增：4 预设 × 2 策略真实 UI 全扫，
+  逐项对照 §6 期望）：exit 0，pass=8 fail=0，pageerrors=0
+
+## 8. 浏览器检查（改后生产构建，vite preview :4173，本地 Chromium）
+- 31/31 PASS（T009 原脚本逐项复跑）：页面加载、顶栏离线声明、EMPTY 隐私声明、
+  TFK-A 认证/双断言/标题变化/拆分与合并徽章/NOT_SUPPLIED/无安全评分、
+  槽位高亮（Markdown 行 + 单元格）、MISMATCH 首字节定位 + 证书范围说明、
+  复制交接文本、下载 JSON（tablefork-report-TFK-A.json）、清空内存回 EMPTY、
+  TFK-C NO_WITNESS_FOUND（“不表示保真”“无 B 表”）、TFK-D UNSUPPORTED +
+  UNSUPPORTED_HEADER_SEMANTICS（“不回退为猜测”）、键盘 Tab（12 distinct / 22 次，
+  焦点可见）、零远程请求（6 个请求，全部 http://127.0.0.1:4173）、
+  390px 零横向溢出（overflow-x=0px）。
+- TFK-A 桌面截图：重拍后 sha256 与 T009 完全相同
+  （148beea42227067b5035169dc388585931cc56f11b13ad75d248aa5fa9642fad，
+  1280x1944），UI 无可见变化，沿用旧图（git 中 6 张截图均未改动）；
+  其余 5 张重拍后 sha256 也与 T009 日志逐一相同（mismatch-A c2af6442…、
+  desktop-C 2d2530fb…、desktop-D e2a73fc8…、keyboard-focus 47749258…、
+  mobile390-A 49f5e83c…），故全部沿用旧图。
+- 注意：首次启动 preview 时未加 --host，只绑了 ::1:4173，127.0.0.1 连不上
+  （curl http=000，三脚本均 CONNECTION_REFUSED）；改加 --host 127.0.0.1 后
+  http=200，三脚本全部通过。另：中途一次 `pkill -f "vite preview"` 误杀了
+  自己的 shell（pattern 匹配到自身命令行），改按 PID kill（18727/18726/
+  18713/18712），preview 已停，无残留进程。
+
+## 9. 未解决问题 / 遗留
+- L1（小）：src/ui/presets.ts 头注第 18 行仍写“分析走 src/ui/analyzeLocal.ts”，
+  该文件已删，注释已过期。本卡禁碰 presets.ts（数据单一来源），故未改；
+  请后续卡顺手改一行注释（改为“分析走 src/core/report.ts 的 analyze()”）。
+- L2（说明）：analyze() 内部哈希复核不再是两个独立实现的交叉核对
+  （见 §3）；等价性现在由已知向量测试钉死。这是任务卡指定的做法，
+  不是偏离。
+- L3（说明）：App 在 NO_WITNESS_FOUND 时为取 reason 再调一次 findWitness
+  （analyze 内部已调过一次）；只在无见证分支多跑一次搜索，小表可忽略，
+  若后续在意可由 T013 把 reason 放进 AnalyzeResult 冻结字段再改。
+- L4：T010 的 Worker 同样跑在浏览器里，现已不再撞 node:crypto 这堵墙，
+  但 Worker 接线本身仍是 T010 的活，本卡未碰。
+- WINDOWS_NOT_TESTED（本机 Linux，无 Windows 运行或声称）。
+- 未测性能 p95（T012 的门）；SHA-256 纯 TS 实现在 1M 'a' 上一次调用
+  约毫秒级（测试内跑过，未正式计时，不作性能声称）。
+
+## 10. 结论
+PASS。node:crypto 已彻底清除出 src/（无真实 import），UI 直接调用
+analyze()，止损层已删；摘要逐字节不变（§4/§5），8/8 等价性成立（§6），
+build 与浏览器检查全部通过（§7/§8），测试 157/157。

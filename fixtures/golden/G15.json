@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G15",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td colspan=\"2\"></td><td>Z</td></tr><tr><td>p</td><td>q</td><td>r</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G15"
+}

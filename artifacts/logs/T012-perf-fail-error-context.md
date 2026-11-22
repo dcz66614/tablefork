@@ -1,0 +1,1058 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: performance.spec.ts >> performance: 32x12 table via UI analyze, 30 runs
+- Location: tests/e2e/performance.spec.ts:27:1
+
+# Error details
+
+```
+Error: expect(received).toBeLessThanOrEqual(expected)
+
+Expected: <= 500
+Received:    527.4
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "表歧镜" [level=1] [ref=e5]
+    - generic [ref=e6]: 离线·只读·不连接 AI
+    - generic [ref=e7]: 规格 v1.0.1 · tablefork.report/v1
+  - region "输入" [ref=e8]:
+    - heading "输入" [level=2] [ref=e9]
+    - group "合成预设" [ref=e10]:
+      - button "TFK-A · 两层列标题 colspan=2" [ref=e11] [cursor=pointer]
+      - button "TFK-B · 行标题 rowspan=2" [ref=e12] [cursor=pointer]
+      - button "TFK-C · 纯矩形无合并" [ref=e13] [cursor=pointer]
+      - button "TFK-D · headers= 引用" [ref=e14] [cursor=pointer]
+    - paragraph [ref=e15]: 请选择一个合成预设，或粘贴 / 打开本地 HTML。全部数据均为合成示例，不含真实办公文档。
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]: 源表 HTML（A）
+        - textbox "源表 HTML（A）" [ref=e19]:
+          - /placeholder: <table>…</table>
+          - text: <table><thead><tr><th rowspan="2">组</th><th colspan="6">上半年</th><th colspan="5">下半年</th></tr><tr><th>上1月</th><th>上2月</th><th>上3月</th><th>上4月</th><th>上5月</th><th>上6月</th><th>下1月</th><th>下2月</th><th>下3月</th><th>下4月</th><th>下5月</th></tr></thead><tbody><tr><th scope="row" rowspan="2">部门1</th><td colspan="6">部1上11</td><td colspan="5">部1下12</td></tr><tr><td colspan="6">部1上13</td><td colspan="5">部1下14</td></tr><tr><th scope="row" rowspan="2">部门2</th><td colspan="6">部2上21</td><td colspan="5">部2下22</td></tr><tr><td colspan="6">部2上23</td><td colspan="5">部2下24</td></tr><tr><th scope="row" rowspan="2">部门3</th><td colspan="6">部3上31</td><td colspan="5">部3下32</td></tr><tr><td colspan="6">部3上33</td><td colspan="5">部3下34</td></tr><tr><th scope="row" rowspan="2">部门4</th><td colspan="6">部4上41</td><td colspan="5">部4下42</td></tr><tr><td colspan="6">部4上43</td><td colspan="5">部4下44</td></tr><tr><th scope="row" rowspan="2">部门5</th><td colspan="6">部5上51</td><td colspan="5">部5下52</td></tr><tr><td colspan="6">部5上53</td><td colspan="5">部5下54</td></tr><tr><th scope="row" rowspan="2">部门6</th><td colspan="6">部6上61</td><td colspan="5">部6下62</td></tr><tr><td colspan="6">部6上63</td><td colspan="5">部6下64</td></tr><tr><th scope="row" rowspan="2">部门7</th><td colspan="6">部7上71</td><td colspan="5">部7下72</td></tr><tr><td colspan="6">部7上73</td><td colspan="5">部7下74</td></tr><tr><th scope="row" rowspan="2">部门8</th><td colspan="6">部8上81</td><td colspan="5">部8下82</td></tr><tr><td colspan="6">部8上83</td><td colspan="5">部8下84</td></tr><tr><th scope="row" rowspan="2">部门9</th><td colspan="6">部9上91</td><td colspan="5">部9下92</td></tr><tr><td colspan="6">部9上93</td><td colspan="5">部9下94</td></tr><tr><th scope="row" rowspan="2">部门10</th><td colspan="6">部10上101</td><td colspan="5">部10下102</td></tr><tr><td colspan="6">部10上103</td><td colspan="5">部10下104</td></tr><tr><th scope="row" rowspan="2">部门11</th><td colspan="6">部11上111</td><td colspan="5">部11下112</td></tr><tr><td colspan="6">部11上113</td><td colspan="5">部11下114</td></tr><tr><th scope="row" rowspan="2">部门12</th><td colspan="6">部12上121</td><td colspan="5">部12下122</td></tr><tr><td colspan="6">部12上123</td><td colspan="5">部12下124</td></tr><tr><th scope="row" rowspan="2">部门13</th><td colspan="6">部13上131</td><td colspan="5">部13下132</td></tr><tr><td colspan="6">部13上133</td><td colspan="5">部13下134</td></tr><tr><th scope="row" rowspan="2">部门14</th><td colspan="6">部14上141</td><td colspan="5">部14下142</td></tr><tr><td colspan="6">部14上143</td><td colspan="5">部14下144</td></tr><tr><th scope="row" rowspan="2">部门15</th><td colspan="6">部15上151</td><td colspan="5">部15下152</td></tr><tr><td colspan="6">部15上153</td><td colspan="5">部15下154</td></tr></tbody></table>
+        - generic [ref=e20]:
+          - text: 3047 / 65536 UTF-8 字节。
+          - generic [ref=e21]: 源表结构有效：32 行 × 12 列，89 个 DOM 单元格。
+        - generic [ref=e22]:
+          - button "粘贴 HTML" [ref=e23] [cursor=pointer]
+          - button "打开本地 .html" [ref=e24] [cursor=pointer]
+      - generic [ref=e25]:
+        - generic [ref=e26]: 待交接 Markdown（M，用户粘贴，可编辑）
+        - textbox "待交接 Markdown（M，用户粘贴，可编辑）" [ref=e27]:
+          - /placeholder: 留空表示未提供 M（NOT_SUPPLIED），页面可预览生成的 F(A)。
+        - generic [ref=e28]: 0 / 65536 UTF-8 字节。留空 = 未提供 M；仅含空白的串按已提供处理。
+        - generic [ref=e29]:
+          - button "打开本地 .md" [ref=e30] [cursor=pointer]
+          - button "用 F(A) 填入" [ref=e31] [cursor=pointer]
+    - group "扁平化策略 F" [ref=e32]:
+      - generic [ref=e34]:
+        - radio "ORIGIN_EMPTY（原点留值，延展格留空）" [checked] [ref=e35]
+        - text: ORIGIN_EMPTY（原点留值，延展格留空）
+      - generic [ref=e36]:
+        - radio "REPEAT_VALUE（每个覆盖格复制原值）" [ref=e37]
+        - text: REPEAT_VALUE（每个覆盖格复制原值）
+    - button "比较并寻找反例" [active] [ref=e39] [cursor=pointer]
+  - region "双表对照" [ref=e40]:
+    - heading "双表对照" [level=2] [ref=e41]
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - heading "表 A（原表）" [level=3] [ref=e44]
+        - paragraph [ref=e45]: 合并格有加粗跨线、底色与“合并”文字徽标。
+        - table "表 A（32 行 × 12 列，89 个 DOM 单元格）" [ref=e46]:
+          - caption [ref=e47]: 表 A（32 行 × 12 列，89 个 DOM 单元格）
+          - rowgroup [ref=e48]:
+            - row [ref=e49]:
+              - button "R0C0 来源 c00 TH 2×1 合并 2×1 值：组" [ref=e50] [cursor=pointer]:
+                - generic [ref=e51]: R0C0 · c00
+                - generic [ref=e52]: 合并 2×1
+                - generic [ref=e53]: 组
+              - button "R0C1 来源 c01 TH 1×6 合并 1×6 值：上半年" [ref=e54] [cursor=pointer]:
+                - generic [ref=e55]: R0C1 · c01
+                - generic [ref=e56]: 合并 1×6
+                - generic [ref=e57]: 上半年
+              - button "R0C7 来源 c02 TH 1×5 合并 1×5 值：下半年" [ref=e58] [cursor=pointer]:
+                - generic [ref=e59]: R0C7 · c02
+                - generic [ref=e60]: 合并 1×5
+                - generic [ref=e61]: 下半年
+            - row [ref=e62]:
+              - button "R1C1 来源 c03 TH 1×1 值：上1月" [ref=e63] [cursor=pointer]:
+                - generic [ref=e64]: R1C1 · c03
+                - generic [ref=e65]: 上1月
+              - button "R1C2 来源 c04 TH 1×1 值：上2月" [ref=e66] [cursor=pointer]:
+                - generic [ref=e67]: R1C2 · c04
+                - generic [ref=e68]: 上2月
+              - button "R1C3 来源 c05 TH 1×1 值：上3月" [ref=e69] [cursor=pointer]:
+                - generic [ref=e70]: R1C3 · c05
+                - generic [ref=e71]: 上3月
+              - button "R1C4 来源 c06 TH 1×1 值：上4月" [ref=e72] [cursor=pointer]:
+                - generic [ref=e73]: R1C4 · c06
+                - generic [ref=e74]: 上4月
+              - button "R1C5 来源 c07 TH 1×1 值：上5月" [ref=e75] [cursor=pointer]:
+                - generic [ref=e76]: R1C5 · c07
+                - generic [ref=e77]: 上5月
+              - button "R1C6 来源 c08 TH 1×1 值：上6月" [ref=e78] [cursor=pointer]:
+                - generic [ref=e79]: R1C6 · c08
+                - generic [ref=e80]: 上6月
+              - button "R1C7 来源 c09 TH 1×1 值：下1月" [ref=e81] [cursor=pointer]:
+                - generic [ref=e82]: R1C7 · c09
+                - generic [ref=e83]: 下1月
+              - button "R1C8 来源 c10 TH 1×1 值：下2月" [ref=e84] [cursor=pointer]:
+                - generic [ref=e85]: R1C8 · c10
+                - generic [ref=e86]: 下2月
+              - button "R1C9 来源 c11 TH 1×1 值：下3月" [ref=e87] [cursor=pointer]:
+                - generic [ref=e88]: R1C9 · c11
+                - generic [ref=e89]: 下3月
+              - button "R1C10 来源 c12 TH 1×1 值：下4月" [ref=e90] [cursor=pointer]:
+                - generic [ref=e91]: R1C10 · c12
+                - generic [ref=e92]: 下4月
+              - button "R1C11 来源 c13 TH 1×1 值：下5月" [ref=e93] [cursor=pointer]:
+                - generic [ref=e94]: R1C11 · c13
+                - generic [ref=e95]: 下5月
+            - row [ref=e96]:
+              - button "R2C0 来源 c14 TH scope=row 2×1 合并 2×1 值：部门1" [ref=e97] [cursor=pointer]:
+                - generic [ref=e98]: R2C0 · c14
+                - generic [ref=e99]: 合并 2×1
+                - generic [ref=e100]: 部门1
+              - button "R2C1 来源 c15 TD 1×6 合并 1×6 值：部1上11" [ref=e101] [cursor=pointer]:
+                - generic [ref=e102]: R2C1 · c15
+                - generic [ref=e103]: 合并 1×6
+                - generic [ref=e104]: 部1上11
+              - button "R2C7 来源 c16 TD 1×5 合并 1×5 值：部1下12" [ref=e105] [cursor=pointer]:
+                - generic [ref=e106]: R2C7 · c16
+                - generic [ref=e107]: 合并 1×5
+                - generic [ref=e108]: 部1下12
+            - row [ref=e109]:
+              - button "R3C1 来源 c17 TD 1×6 合并 1×6 值：部1上13" [ref=e110] [cursor=pointer]:
+                - generic [ref=e111]: R3C1 · c17
+                - generic [ref=e112]: 合并 1×6
+                - generic [ref=e113]: 部1上13
+              - button "R3C7 来源 c18 TD 1×5 合并 1×5 值：部1下14" [ref=e114] [cursor=pointer]:
+                - generic [ref=e115]: R3C7 · c18
+                - generic [ref=e116]: 合并 1×5
+                - generic [ref=e117]: 部1下14
+            - row [ref=e118]:
+              - button "R4C0 来源 c19 TH scope=row 2×1 合并 2×1 值：部门2" [ref=e119] [cursor=pointer]:
+                - generic [ref=e120]: R4C0 · c19
+                - generic [ref=e121]: 合并 2×1
+                - generic [ref=e122]: 部门2
+              - button "R4C1 来源 c20 TD 1×6 合并 1×6 值：部2上21" [ref=e123] [cursor=pointer]:
+                - generic [ref=e124]: R4C1 · c20
+                - generic [ref=e125]: 合并 1×6
+                - generic [ref=e126]: 部2上21
+              - button "R4C7 来源 c21 TD 1×5 合并 1×5 值：部2下22" [ref=e127] [cursor=pointer]:
+                - generic [ref=e128]: R4C7 · c21
+                - generic [ref=e129]: 合并 1×5
+                - generic [ref=e130]: 部2下22
+            - row [ref=e131]:
+              - button "R5C1 来源 c22 TD 1×6 合并 1×6 值：部2上23" [ref=e132] [cursor=pointer]:
+                - generic [ref=e133]: R5C1 · c22
+                - generic [ref=e134]: 合并 1×6
+                - generic [ref=e135]: 部2上23
+              - button "R5C7 来源 c23 TD 1×5 合并 1×5 值：部2下24" [ref=e136] [cursor=pointer]:
+                - generic [ref=e137]: R5C7 · c23
+                - generic [ref=e138]: 合并 1×5
+                - generic [ref=e139]: 部2下24
+            - row [ref=e140]:
+              - button "R6C0 来源 c24 TH scope=row 2×1 合并 2×1 值：部门3" [ref=e141] [cursor=pointer]:
+                - generic [ref=e142]: R6C0 · c24
+                - generic [ref=e143]: 合并 2×1
+                - generic [ref=e144]: 部门3
+              - button "R6C1 来源 c25 TD 1×6 合并 1×6 值：部3上31" [ref=e145] [cursor=pointer]:
+                - generic [ref=e146]: R6C1 · c25
+                - generic [ref=e147]: 合并 1×6
+                - generic [ref=e148]: 部3上31
+              - button "R6C7 来源 c26 TD 1×5 合并 1×5 值：部3下32" [ref=e149] [cursor=pointer]:
+                - generic [ref=e150]: R6C7 · c26
+                - generic [ref=e151]: 合并 1×5
+                - generic [ref=e152]: 部3下32
+            - row [ref=e153]:
+              - button "R7C1 来源 c27 TD 1×6 合并 1×6 值：部3上33" [ref=e154] [cursor=pointer]:
+                - generic [ref=e155]: R7C1 · c27
+                - generic [ref=e156]: 合并 1×6
+                - generic [ref=e157]: 部3上33
+              - button "R7C7 来源 c28 TD 1×5 合并 1×5 值：部3下34" [ref=e158] [cursor=pointer]:
+                - generic [ref=e159]: R7C7 · c28
+                - generic [ref=e160]: 合并 1×5
+                - generic [ref=e161]: 部3下34
+            - row [ref=e162]:
+              - button "R8C0 来源 c29 TH scope=row 2×1 合并 2×1 值：部门4" [ref=e163] [cursor=pointer]:
+                - generic [ref=e164]: R8C0 · c29
+                - generic [ref=e165]: 合并 2×1
+                - generic [ref=e166]: 部门4
+              - button "R8C1 来源 c30 TD 1×6 合并 1×6 值：部4上41" [ref=e167] [cursor=pointer]:
+                - generic [ref=e168]: R8C1 · c30
+                - generic [ref=e169]: 合并 1×6
+                - generic [ref=e170]: 部4上41
+              - button "R8C7 来源 c31 TD 1×5 合并 1×5 值：部4下42" [ref=e171] [cursor=pointer]:
+                - generic [ref=e172]: R8C7 · c31
+                - generic [ref=e173]: 合并 1×5
+                - generic [ref=e174]: 部4下42
+            - row [ref=e175]:
+              - button "R9C1 来源 c32 TD 1×6 合并 1×6 值：部4上43" [ref=e176] [cursor=pointer]:
+                - generic [ref=e177]: R9C1 · c32
+                - generic [ref=e178]: 合并 1×6
+                - generic [ref=e179]: 部4上43
+              - button "R9C7 来源 c33 TD 1×5 合并 1×5 值：部4下44" [ref=e180] [cursor=pointer]:
+                - generic [ref=e181]: R9C7 · c33
+                - generic [ref=e182]: 合并 1×5
+                - generic [ref=e183]: 部4下44
+            - row [ref=e184]:
+              - button "R10C0 来源 c34 TH scope=row 2×1 合并 2×1 值：部门5" [ref=e185] [cursor=pointer]:
+                - generic [ref=e186]: R10C0 · c34
+                - generic [ref=e187]: 合并 2×1
+                - generic [ref=e188]: 部门5
+              - button "R10C1 来源 c35 TD 1×6 合并 1×6 值：部5上51" [ref=e189] [cursor=pointer]:
+                - generic [ref=e190]: R10C1 · c35
+                - generic [ref=e191]: 合并 1×6
+                - generic [ref=e192]: 部5上51
+              - button "R10C7 来源 c36 TD 1×5 合并 1×5 值：部5下52" [ref=e193] [cursor=pointer]:
+                - generic [ref=e194]: R10C7 · c36
+                - generic [ref=e195]: 合并 1×5
+                - generic [ref=e196]: 部5下52
+            - row [ref=e197]:
+              - button "R11C1 来源 c37 TD 1×6 合并 1×6 值：部5上53" [ref=e198] [cursor=pointer]:
+                - generic [ref=e199]: R11C1 · c37
+                - generic [ref=e200]: 合并 1×6
+                - generic [ref=e201]: 部5上53
+              - button "R11C7 来源 c38 TD 1×5 合并 1×5 值：部5下54" [ref=e202] [cursor=pointer]:
+                - generic [ref=e203]: R11C7 · c38
+                - generic [ref=e204]: 合并 1×5
+                - generic [ref=e205]: 部5下54
+            - row [ref=e206]:
+              - button "R12C0 来源 c39 TH scope=row 2×1 合并 2×1 值：部门6" [ref=e207] [cursor=pointer]:
+                - generic [ref=e208]: R12C0 · c39
+                - generic [ref=e209]: 合并 2×1
+                - generic [ref=e210]: 部门6
+              - button "R12C1 来源 c40 TD 1×6 合并 1×6 值：部6上61" [ref=e211] [cursor=pointer]:
+                - generic [ref=e212]: R12C1 · c40
+                - generic [ref=e213]: 合并 1×6
+                - generic [ref=e214]: 部6上61
+              - button "R12C7 来源 c41 TD 1×5 合并 1×5 值：部6下62" [ref=e215] [cursor=pointer]:
+                - generic [ref=e216]: R12C7 · c41
+                - generic [ref=e217]: 合并 1×5
+                - generic [ref=e218]: 部6下62
+            - row [ref=e219]:
+              - button "R13C1 来源 c42 TD 1×6 合并 1×6 值：部6上63" [ref=e220] [cursor=pointer]:
+                - generic [ref=e221]: R13C1 · c42
+                - generic [ref=e222]: 合并 1×6
+                - generic [ref=e223]: 部6上63
+              - button "R13C7 来源 c43 TD 1×5 合并 1×5 值：部6下64" [ref=e224] [cursor=pointer]:
+                - generic [ref=e225]: R13C7 · c43
+                - generic [ref=e226]: 合并 1×5
+                - generic [ref=e227]: 部6下64
+            - row [ref=e228]:
+              - button "R14C0 来源 c44 TH scope=row 2×1 合并 2×1 值：部门7" [ref=e229] [cursor=pointer]:
+                - generic [ref=e230]: R14C0 · c44
+                - generic [ref=e231]: 合并 2×1
+                - generic [ref=e232]: 部门7
+              - button "R14C1 来源 c45 TD 1×6 合并 1×6 值：部7上71" [ref=e233] [cursor=pointer]:
+                - generic [ref=e234]: R14C1 · c45
+                - generic [ref=e235]: 合并 1×6
+                - generic [ref=e236]: 部7上71
+              - button "R14C7 来源 c46 TD 1×5 合并 1×5 值：部7下72" [ref=e237] [cursor=pointer]:
+                - generic [ref=e238]: R14C7 · c46
+                - generic [ref=e239]: 合并 1×5
+                - generic [ref=e240]: 部7下72
+            - row [ref=e241]:
+              - button "R15C1 来源 c47 TD 1×6 合并 1×6 值：部7上73" [ref=e242] [cursor=pointer]:
+                - generic [ref=e243]: R15C1 · c47
+                - generic [ref=e244]: 合并 1×6
+                - generic [ref=e245]: 部7上73
+              - button "R15C7 来源 c48 TD 1×5 合并 1×5 值：部7下74" [ref=e246] [cursor=pointer]:
+                - generic [ref=e247]: R15C7 · c48
+                - generic [ref=e248]: 合并 1×5
+                - generic [ref=e249]: 部7下74
+            - row [ref=e250]:
+              - button "R16C0 来源 c49 TH scope=row 2×1 合并 2×1 值：部门8" [ref=e251] [cursor=pointer]:
+                - generic [ref=e252]: R16C0 · c49
+                - generic [ref=e253]: 合并 2×1
+                - generic [ref=e254]: 部门8
+              - button "R16C1 来源 c50 TD 1×6 合并 1×6 值：部8上81" [ref=e255] [cursor=pointer]:
+                - generic [ref=e256]: R16C1 · c50
+                - generic [ref=e257]: 合并 1×6
+                - generic [ref=e258]: 部8上81
+              - button "R16C7 来源 c51 TD 1×5 合并 1×5 值：部8下82" [ref=e259] [cursor=pointer]:
+                - generic [ref=e260]: R16C7 · c51
+                - generic [ref=e261]: 合并 1×5
+                - generic [ref=e262]: 部8下82
+            - row [ref=e263]:
+              - button "R17C1 来源 c52 TD 1×6 合并 1×6 值：部8上83" [ref=e264] [cursor=pointer]:
+                - generic [ref=e265]: R17C1 · c52
+                - generic [ref=e266]: 合并 1×6
+                - generic [ref=e267]: 部8上83
+              - button "R17C7 来源 c53 TD 1×5 合并 1×5 值：部8下84" [ref=e268] [cursor=pointer]:
+                - generic [ref=e269]: R17C7 · c53
+                - generic [ref=e270]: 合并 1×5
+                - generic [ref=e271]: 部8下84
+            - row [ref=e272]:
+              - button "R18C0 来源 c54 TH scope=row 2×1 合并 2×1 值：部门9" [ref=e273] [cursor=pointer]:
+                - generic [ref=e274]: R18C0 · c54
+                - generic [ref=e275]: 合并 2×1
+                - generic [ref=e276]: 部门9
+              - button "R18C1 来源 c55 TD 1×6 合并 1×6 值：部9上91" [ref=e277] [cursor=pointer]:
+                - generic [ref=e278]: R18C1 · c55
+                - generic [ref=e279]: 合并 1×6
+                - generic [ref=e280]: 部9上91
+              - button "R18C7 来源 c56 TD 1×5 合并 1×5 值：部9下92" [ref=e281] [cursor=pointer]:
+                - generic [ref=e282]: R18C7 · c56
+                - generic [ref=e283]: 合并 1×5
+                - generic [ref=e284]: 部9下92
+            - row [ref=e285]:
+              - button "R19C1 来源 c57 TD 1×6 合并 1×6 值：部9上93" [ref=e286] [cursor=pointer]:
+                - generic [ref=e287]: R19C1 · c57
+                - generic [ref=e288]: 合并 1×6
+                - generic [ref=e289]: 部9上93
+              - button "R19C7 来源 c58 TD 1×5 合并 1×5 值：部9下94" [ref=e290] [cursor=pointer]:
+                - generic [ref=e291]: R19C7 · c58
+                - generic [ref=e292]: 合并 1×5
+                - generic [ref=e293]: 部9下94
+            - row [ref=e294]:
+              - button "R20C0 来源 c59 TH scope=row 2×1 合并 2×1 值：部门10" [ref=e295] [cursor=pointer]:
+                - generic [ref=e296]: R20C0 · c59
+                - generic [ref=e297]: 合并 2×1
+                - generic [ref=e298]: 部门10
+              - button "R20C1 来源 c60 TD 1×6 合并 1×6 值：部10上101" [ref=e299] [cursor=pointer]:
+                - generic [ref=e300]: R20C1 · c60
+                - generic [ref=e301]: 合并 1×6
+                - generic [ref=e302]: 部10上101
+              - button "R20C7 来源 c61 TD 1×5 合并 1×5 值：部10下102" [ref=e303] [cursor=pointer]:
+                - generic [ref=e304]: R20C7 · c61
+                - generic [ref=e305]: 合并 1×5
+                - generic [ref=e306]: 部10下102
+            - row [ref=e307]:
+              - button "R21C1 来源 c62 TD 1×6 合并 1×6 值：部10上103" [ref=e308] [cursor=pointer]:
+                - generic [ref=e309]: R21C1 · c62
+                - generic [ref=e310]: 合并 1×6
+                - generic [ref=e311]: 部10上103
+              - button "R21C7 来源 c63 TD 1×5 合并 1×5 值：部10下104" [ref=e312] [cursor=pointer]:
+                - generic [ref=e313]: R21C7 · c63
+                - generic [ref=e314]: 合并 1×5
+                - generic [ref=e315]: 部10下104
+            - row [ref=e316]:
+              - button "R22C0 来源 c64 TH scope=row 2×1 合并 2×1 值：部门11" [ref=e317] [cursor=pointer]:
+                - generic [ref=e318]: R22C0 · c64
+                - generic [ref=e319]: 合并 2×1
+                - generic [ref=e320]: 部门11
+              - button "R22C1 来源 c65 TD 1×6 合并 1×6 值：部11上111" [ref=e321] [cursor=pointer]:
+                - generic [ref=e322]: R22C1 · c65
+                - generic [ref=e323]: 合并 1×6
+                - generic [ref=e324]: 部11上111
+              - button "R22C7 来源 c66 TD 1×5 合并 1×5 值：部11下112" [ref=e325] [cursor=pointer]:
+                - generic [ref=e326]: R22C7 · c66
+                - generic [ref=e327]: 合并 1×5
+                - generic [ref=e328]: 部11下112
+            - row [ref=e329]:
+              - button "R23C1 来源 c67 TD 1×6 合并 1×6 值：部11上113" [ref=e330] [cursor=pointer]:
+                - generic [ref=e331]: R23C1 · c67
+                - generic [ref=e332]: 合并 1×6
+                - generic [ref=e333]: 部11上113
+              - button "R23C7 来源 c68 TD 1×5 合并 1×5 值：部11下114" [ref=e334] [cursor=pointer]:
+                - generic [ref=e335]: R23C7 · c68
+                - generic [ref=e336]: 合并 1×5
+                - generic [ref=e337]: 部11下114
+            - row [ref=e338]:
+              - button "R24C0 来源 c69 TH scope=row 2×1 合并 2×1 值：部门12" [ref=e339] [cursor=pointer]:
+                - generic [ref=e340]: R24C0 · c69
+                - generic [ref=e341]: 合并 2×1
+                - generic [ref=e342]: 部门12
+              - button "R24C1 来源 c70 TD 1×6 合并 1×6 值：部12上121" [ref=e343] [cursor=pointer]:
+                - generic [ref=e344]: R24C1 · c70
+                - generic [ref=e345]: 合并 1×6
+                - generic [ref=e346]: 部12上121
+              - button "R24C7 来源 c71 TD 1×5 合并 1×5 值：部12下122" [ref=e347] [cursor=pointer]:
+                - generic [ref=e348]: R24C7 · c71
+                - generic [ref=e349]: 合并 1×5
+                - generic [ref=e350]: 部12下122
+            - row [ref=e351]:
+              - button "R25C1 来源 c72 TD 1×6 合并 1×6 值：部12上123" [ref=e352] [cursor=pointer]:
+                - generic [ref=e353]: R25C1 · c72
+                - generic [ref=e354]: 合并 1×6
+                - generic [ref=e355]: 部12上123
+              - button "R25C7 来源 c73 TD 1×5 合并 1×5 值：部12下124" [ref=e356] [cursor=pointer]:
+                - generic [ref=e357]: R25C7 · c73
+                - generic [ref=e358]: 合并 1×5
+                - generic [ref=e359]: 部12下124
+            - row [ref=e360]:
+              - button "R26C0 来源 c74 TH scope=row 2×1 合并 2×1 值：部门13" [ref=e361] [cursor=pointer]:
+                - generic [ref=e362]: R26C0 · c74
+                - generic [ref=e363]: 合并 2×1
+                - generic [ref=e364]: 部门13
+              - button "R26C1 来源 c75 TD 1×6 合并 1×6 值：部13上131" [ref=e365] [cursor=pointer]:
+                - generic [ref=e366]: R26C1 · c75
+                - generic [ref=e367]: 合并 1×6
+                - generic [ref=e368]: 部13上131
+              - button "R26C7 来源 c76 TD 1×5 合并 1×5 值：部13下132" [ref=e369] [cursor=pointer]:
+                - generic [ref=e370]: R26C7 · c76
+                - generic [ref=e371]: 合并 1×5
+                - generic [ref=e372]: 部13下132
+            - row [ref=e373]:
+              - button "R27C1 来源 c77 TD 1×6 合并 1×6 值：部13上133" [ref=e374] [cursor=pointer]:
+                - generic [ref=e375]: R27C1 · c77
+                - generic [ref=e376]: 合并 1×6
+                - generic [ref=e377]: 部13上133
+              - button "R27C7 来源 c78 TD 1×5 合并 1×5 值：部13下134" [ref=e378] [cursor=pointer]:
+                - generic [ref=e379]: R27C7 · c78
+                - generic [ref=e380]: 合并 1×5
+                - generic [ref=e381]: 部13下134
+            - row [ref=e382]:
+              - button "R28C0 来源 c79 TH scope=row 2×1 合并 2×1 值：部门14" [ref=e383] [cursor=pointer]:
+                - generic [ref=e384]: R28C0 · c79
+                - generic [ref=e385]: 合并 2×1
+                - generic [ref=e386]: 部门14
+              - button "R28C1 来源 c80 TD 1×6 合并 1×6 值：部14上141" [ref=e387] [cursor=pointer]:
+                - generic [ref=e388]: R28C1 · c80
+                - generic [ref=e389]: 合并 1×6
+                - generic [ref=e390]: 部14上141
+              - button "R28C7 来源 c81 TD 1×5 合并 1×5 值：部14下142" [ref=e391] [cursor=pointer]:
+                - generic [ref=e392]: R28C7 · c81
+                - generic [ref=e393]: 合并 1×5
+                - generic [ref=e394]: 部14下142
+            - row [ref=e395]:
+              - button "R29C1 来源 c82 TD 1×6 合并 1×6 值：部14上143" [ref=e396] [cursor=pointer]:
+                - generic [ref=e397]: R29C1 · c82
+                - generic [ref=e398]: 合并 1×6
+                - generic [ref=e399]: 部14上143
+              - button "R29C7 来源 c83 TD 1×5 合并 1×5 值：部14下144" [ref=e400] [cursor=pointer]:
+                - generic [ref=e401]: R29C7 · c83
+                - generic [ref=e402]: 合并 1×5
+                - generic [ref=e403]: 部14下144
+            - row [ref=e404]:
+              - button "R30C0 来源 c84 TH scope=row 2×1 合并 2×1 值：部门15" [ref=e405] [cursor=pointer]:
+                - generic [ref=e406]: R30C0 · c84
+                - generic [ref=e407]: 合并 2×1
+                - generic [ref=e408]: 部门15
+              - button "R30C1 来源 c85 TD 1×6 合并 1×6 值：部15上151" [ref=e409] [cursor=pointer]:
+                - generic [ref=e410]: R30C1 · c85
+                - generic [ref=e411]: 合并 1×6
+                - generic [ref=e412]: 部15上151
+              - button "R30C7 来源 c86 TD 1×5 合并 1×5 值：部15下152" [ref=e413] [cursor=pointer]:
+                - generic [ref=e414]: R30C7 · c86
+                - generic [ref=e415]: 合并 1×5
+                - generic [ref=e416]: 部15下152
+            - row [ref=e417]:
+              - button "R31C1 来源 c87 TD 1×6 合并 1×6 值：部15上153" [ref=e418] [cursor=pointer]:
+                - generic [ref=e419]: R31C1 · c87
+                - generic [ref=e420]: 合并 1×6
+                - generic [ref=e421]: 部15上153
+              - button "R31C7 来源 c88 TD 1×5 合并 1×5 值：部15下154" [ref=e422] [cursor=pointer]:
+                - generic [ref=e423]: R31C7 · c88
+                - generic [ref=e424]: 合并 1×5
+                - generic [ref=e425]: 部15下154
+      - generic [ref=e426]:
+        - heading "Markdown（同一份）" [level=3] [ref=e427]
+        - paragraph [ref=e428]: F(A) 与 F(B) 逐字节相同，只显示一份。
+        - generic "生成的 Markdown（F(A)）" [ref=e430]:
+          - code [ref=e431]:
+            - generic [ref=e432]:
+              - generic [ref=e433]: "1"
+              - text: "| 组 | 上半年 | | | | | | 下半年 | | | | |"
+            - generic [ref=e434]:
+              - generic [ref=e435]: "2"
+              - text: "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+            - generic [ref=e436]:
+              - generic [ref=e437]: "3"
+              - text: "| | 上1月 | 上2月 | 上3月 | 上4月 | 上5月 | 上6月 | 下1月 | 下2月 | 下3月 | 下4月 | 下5月 |"
+            - generic [ref=e438]:
+              - generic [ref=e439]: "4"
+              - text: "| 部门1 | 部1上11 | | | | | | 部1下12 | | | | |"
+            - generic [ref=e440]:
+              - generic [ref=e441]: "5"
+              - text: "| | 部1上13 | | | | | | 部1下14 | | | | |"
+            - generic [ref=e442]:
+              - generic [ref=e443]: "6"
+              - text: "| 部门2 | 部2上21 | | | | | | 部2下22 | | | | |"
+            - generic [ref=e444]:
+              - generic [ref=e445]: "7"
+              - text: "| | 部2上23 | | | | | | 部2下24 | | | | |"
+            - generic [ref=e446]:
+              - generic [ref=e447]: "8"
+              - text: "| 部门3 | 部3上31 | | | | | | 部3下32 | | | | |"
+            - generic [ref=e448]:
+              - generic [ref=e449]: "9"
+              - text: "| | 部3上33 | | | | | | 部3下34 | | | | |"
+            - generic [ref=e450]:
+              - generic [ref=e451]: "10"
+              - text: "| 部门4 | 部4上41 | | | | | | 部4下42 | | | | |"
+            - generic [ref=e452]:
+              - generic [ref=e453]: "11"
+              - text: "| | 部4上43 | | | | | | 部4下44 | | | | |"
+            - generic [ref=e454]:
+              - generic [ref=e455]: "12"
+              - text: "| 部门5 | 部5上51 | | | | | | 部5下52 | | | | |"
+            - generic [ref=e456]:
+              - generic [ref=e457]: "13"
+              - text: "| | 部5上53 | | | | | | 部5下54 | | | | |"
+            - generic [ref=e458]:
+              - generic [ref=e459]: "14"
+              - text: "| 部门6 | 部6上61 | | | | | | 部6下62 | | | | |"
+            - generic [ref=e460]:
+              - generic [ref=e461]: "15"
+              - text: "| | 部6上63 | | | | | | 部6下64 | | | | |"
+            - generic [ref=e462]:
+              - generic [ref=e463]: "16"
+              - text: "| 部门7 | 部7上71 | | | | | | 部7下72 | | | | |"
+            - generic [ref=e464]:
+              - generic [ref=e465]: "17"
+              - text: "| | 部7上73 | | | | | | 部7下74 | | | | |"
+            - generic [ref=e466]:
+              - generic [ref=e467]: "18"
+              - text: "| 部门8 | 部8上81 | | | | | | 部8下82 | | | | |"
+            - generic [ref=e468]:
+              - generic [ref=e469]: "19"
+              - text: "| | 部8上83 | | | | | | 部8下84 | | | | |"
+            - generic [ref=e470]:
+              - generic [ref=e471]: "20"
+              - text: "| 部门9 | 部9上91 | | | | | | 部9下92 | | | | |"
+            - generic [ref=e472]:
+              - generic [ref=e473]: "21"
+              - text: "| | 部9上93 | | | | | | 部9下94 | | | | |"
+            - generic [ref=e474]:
+              - generic [ref=e475]: "22"
+              - text: "| 部门10 | 部10上101 | | | | | | 部10下102 | | | | |"
+            - generic [ref=e476]:
+              - generic [ref=e477]: "23"
+              - text: "| | 部10上103 | | | | | | 部10下104 | | | | |"
+            - generic [ref=e478]:
+              - generic [ref=e479]: "24"
+              - text: "| 部门11 | 部11上111 | | | | | | 部11下112 | | | | |"
+            - generic [ref=e480]:
+              - generic [ref=e481]: "25"
+              - text: "| | 部11上113 | | | | | | 部11下114 | | | | |"
+            - generic [ref=e482]:
+              - generic [ref=e483]: "26"
+              - text: "| 部门12 | 部12上121 | | | | | | 部12下122 | | | | |"
+            - generic [ref=e484]:
+              - generic [ref=e485]: "27"
+              - text: "| | 部12上123 | | | | | | 部12下124 | | | | |"
+            - generic [ref=e486]:
+              - generic [ref=e487]: "28"
+              - text: "| 部门13 | 部13上131 | | | | | | 部13下132 | | | | |"
+            - generic [ref=e488]:
+              - generic [ref=e489]: "29"
+              - text: "| | 部13上133 | | | | | | 部13下134 | | | | |"
+            - generic [ref=e490]:
+              - generic [ref=e491]: "30"
+              - text: "| 部门14 | 部14上141 | | | | | | 部14下142 | | | | |"
+            - generic [ref=e492]:
+              - generic [ref=e493]: "31"
+              - text: "| | 部14上143 | | | | | | 部14下144 | | | | |"
+            - generic [ref=e494]:
+              - generic [ref=e495]: "32"
+              - text: "| 部门15 | 部15上151 | | | | | | 部15下152 | | | | |"
+            - generic [ref=e496]:
+              - generic [ref=e497]: "33"
+              - text: "| | 部15上153 | | | | | | 部15下154 | | | | |"
+      - generic [ref=e498]:
+        - heading "表 B（反例）" [level=3] [ref=e499]
+        - paragraph [ref=e500]: 拆分源格 c14：至少一个格已被拆开（“已拆分”徽标）。
+        - table "表 B（32 行 × 12 列，90 个 DOM 单元格）" [ref=e501]:
+          - caption [ref=e502]: 表 B（32 行 × 12 列，90 个 DOM 单元格）
+          - rowgroup [ref=e503]:
+            - row [ref=e504]:
+              - button "R0C0 来源 c00 TH 2×1 合并 2×1 值：组" [ref=e505] [cursor=pointer]:
+                - generic [ref=e506]: R0C0 · c00
+                - generic [ref=e507]: 合并 2×1
+                - generic [ref=e508]: 组
+              - button "R0C1 来源 c01 TH 1×6 合并 1×6 值：上半年" [ref=e509] [cursor=pointer]:
+                - generic [ref=e510]: R0C1 · c01
+                - generic [ref=e511]: 合并 1×6
+                - generic [ref=e512]: 上半年
+              - button "R0C7 来源 c02 TH 1×5 合并 1×5 值：下半年" [ref=e513] [cursor=pointer]:
+                - generic [ref=e514]: R0C7 · c02
+                - generic [ref=e515]: 合并 1×5
+                - generic [ref=e516]: 下半年
+            - row [ref=e517]:
+              - button "R1C1 来源 c03 TH 1×1 值：上1月" [ref=e518] [cursor=pointer]:
+                - generic [ref=e519]: R1C1 · c03
+                - generic [ref=e520]: 上1月
+              - button "R1C2 来源 c04 TH 1×1 值：上2月" [ref=e521] [cursor=pointer]:
+                - generic [ref=e522]: R1C2 · c04
+                - generic [ref=e523]: 上2月
+              - button "R1C3 来源 c05 TH 1×1 值：上3月" [ref=e524] [cursor=pointer]:
+                - generic [ref=e525]: R1C3 · c05
+                - generic [ref=e526]: 上3月
+              - button "R1C4 来源 c06 TH 1×1 值：上4月" [ref=e527] [cursor=pointer]:
+                - generic [ref=e528]: R1C4 · c06
+                - generic [ref=e529]: 上4月
+              - button "R1C5 来源 c07 TH 1×1 值：上5月" [ref=e530] [cursor=pointer]:
+                - generic [ref=e531]: R1C5 · c07
+                - generic [ref=e532]: 上5月
+              - button "R1C6 来源 c08 TH 1×1 值：上6月" [ref=e533] [cursor=pointer]:
+                - generic [ref=e534]: R1C6 · c08
+                - generic [ref=e535]: 上6月
+              - button "R1C7 来源 c09 TH 1×1 值：下1月" [ref=e536] [cursor=pointer]:
+                - generic [ref=e537]: R1C7 · c09
+                - generic [ref=e538]: 下1月
+              - button "R1C8 来源 c10 TH 1×1 值：下2月" [ref=e539] [cursor=pointer]:
+                - generic [ref=e540]: R1C8 · c10
+                - generic [ref=e541]: 下2月
+              - button "R1C9 来源 c11 TH 1×1 值：下3月" [ref=e542] [cursor=pointer]:
+                - generic [ref=e543]: R1C9 · c11
+                - generic [ref=e544]: 下3月
+              - button "R1C10 来源 c12 TH 1×1 值：下4月" [ref=e545] [cursor=pointer]:
+                - generic [ref=e546]: R1C10 · c12
+                - generic [ref=e547]: 下4月
+              - button "R1C11 来源 c13 TH 1×1 值：下5月" [ref=e548] [cursor=pointer]:
+                - generic [ref=e549]: R1C11 · c13
+                - generic [ref=e550]: 下5月
+            - row [ref=e551]:
+              - button "R2C0 来源 c14 TH scope=row 1×1 已拆分格 值：部门1" [ref=e552] [cursor=pointer]:
+                - generic [ref=e553]: R2C0 · c14
+                - generic [ref=e554]: 已拆分
+                - generic [ref=e555]: 部门1
+              - button "R2C1 来源 c15 TD 1×6 合并 1×6 值：部1上11" [ref=e556] [cursor=pointer]:
+                - generic [ref=e557]: R2C1 · c15
+                - generic [ref=e558]: 合并 1×6
+                - generic [ref=e559]: 部1上11
+              - button "R2C7 来源 c16 TD 1×5 合并 1×5 值：部1下12" [ref=e560] [cursor=pointer]:
+                - generic [ref=e561]: R2C7 · c16
+                - generic [ref=e562]: 合并 1×5
+                - generic [ref=e563]: 部1下12
+            - row [ref=e564]:
+              - button "R3C0 来源 c17 TH scope=row 1×1 已拆分格 值：（空）" [ref=e565] [cursor=pointer]:
+                - generic [ref=e566]: R3C0 · c17
+                - generic [ref=e567]: 已拆分
+                - generic [ref=e568]: （空）
+              - button "R3C1 来源 c18 TD 1×6 合并 1×6 值：部1上13" [ref=e569] [cursor=pointer]:
+                - generic [ref=e570]: R3C1 · c18
+                - generic [ref=e571]: 合并 1×6
+                - generic [ref=e572]: 部1上13
+              - button "R3C7 来源 c19 TD 1×5 合并 1×5 值：部1下14" [ref=e573] [cursor=pointer]:
+                - generic [ref=e574]: R3C7 · c19
+                - generic [ref=e575]: 合并 1×5
+                - generic [ref=e576]: 部1下14
+            - row [ref=e577]:
+              - button "R4C0 来源 c20 TH scope=row 2×1 合并 2×1 值：部门2" [ref=e578] [cursor=pointer]:
+                - generic [ref=e579]: R4C0 · c20
+                - generic [ref=e580]: 合并 2×1
+                - generic [ref=e581]: 部门2
+              - button "R4C1 来源 c21 TD 1×6 合并 1×6 值：部2上21" [ref=e582] [cursor=pointer]:
+                - generic [ref=e583]: R4C1 · c21
+                - generic [ref=e584]: 合并 1×6
+                - generic [ref=e585]: 部2上21
+              - button "R4C7 来源 c22 TD 1×5 合并 1×5 值：部2下22" [ref=e586] [cursor=pointer]:
+                - generic [ref=e587]: R4C7 · c22
+                - generic [ref=e588]: 合并 1×5
+                - generic [ref=e589]: 部2下22
+            - row [ref=e590]:
+              - button "R5C1 来源 c23 TD 1×6 合并 1×6 值：部2上23" [ref=e591] [cursor=pointer]:
+                - generic [ref=e592]: R5C1 · c23
+                - generic [ref=e593]: 合并 1×6
+                - generic [ref=e594]: 部2上23
+              - button "R5C7 来源 c24 TD 1×5 合并 1×5 值：部2下24" [ref=e595] [cursor=pointer]:
+                - generic [ref=e596]: R5C7 · c24
+                - generic [ref=e597]: 合并 1×5
+                - generic [ref=e598]: 部2下24
+            - row [ref=e599]:
+              - button "R6C0 来源 c25 TH scope=row 2×1 合并 2×1 值：部门3" [ref=e600] [cursor=pointer]:
+                - generic [ref=e601]: R6C0 · c25
+                - generic [ref=e602]: 合并 2×1
+                - generic [ref=e603]: 部门3
+              - button "R6C1 来源 c26 TD 1×6 合并 1×6 值：部3上31" [ref=e604] [cursor=pointer]:
+                - generic [ref=e605]: R6C1 · c26
+                - generic [ref=e606]: 合并 1×6
+                - generic [ref=e607]: 部3上31
+              - button "R6C7 来源 c27 TD 1×5 合并 1×5 值：部3下32" [ref=e608] [cursor=pointer]:
+                - generic [ref=e609]: R6C7 · c27
+                - generic [ref=e610]: 合并 1×5
+                - generic [ref=e611]: 部3下32
+            - row [ref=e612]:
+              - button "R7C1 来源 c28 TD 1×6 合并 1×6 值：部3上33" [ref=e613] [cursor=pointer]:
+                - generic [ref=e614]: R7C1 · c28
+                - generic [ref=e615]: 合并 1×6
+                - generic [ref=e616]: 部3上33
+              - button "R7C7 来源 c29 TD 1×5 合并 1×5 值：部3下34" [ref=e617] [cursor=pointer]:
+                - generic [ref=e618]: R7C7 · c29
+                - generic [ref=e619]: 合并 1×5
+                - generic [ref=e620]: 部3下34
+            - row [ref=e621]:
+              - button "R8C0 来源 c30 TH scope=row 2×1 合并 2×1 值：部门4" [ref=e622] [cursor=pointer]:
+                - generic [ref=e623]: R8C0 · c30
+                - generic [ref=e624]: 合并 2×1
+                - generic [ref=e625]: 部门4
+              - button "R8C1 来源 c31 TD 1×6 合并 1×6 值：部4上41" [ref=e626] [cursor=pointer]:
+                - generic [ref=e627]: R8C1 · c31
+                - generic [ref=e628]: 合并 1×6
+                - generic [ref=e629]: 部4上41
+              - button "R8C7 来源 c32 TD 1×5 合并 1×5 值：部4下42" [ref=e630] [cursor=pointer]:
+                - generic [ref=e631]: R8C7 · c32
+                - generic [ref=e632]: 合并 1×5
+                - generic [ref=e633]: 部4下42
+            - row [ref=e634]:
+              - button "R9C1 来源 c33 TD 1×6 合并 1×6 值：部4上43" [ref=e635] [cursor=pointer]:
+                - generic [ref=e636]: R9C1 · c33
+                - generic [ref=e637]: 合并 1×6
+                - generic [ref=e638]: 部4上43
+              - button "R9C7 来源 c34 TD 1×5 合并 1×5 值：部4下44" [ref=e639] [cursor=pointer]:
+                - generic [ref=e640]: R9C7 · c34
+                - generic [ref=e641]: 合并 1×5
+                - generic [ref=e642]: 部4下44
+            - row [ref=e643]:
+              - button "R10C0 来源 c35 TH scope=row 2×1 合并 2×1 值：部门5" [ref=e644] [cursor=pointer]:
+                - generic [ref=e645]: R10C0 · c35
+                - generic [ref=e646]: 合并 2×1
+                - generic [ref=e647]: 部门5
+              - button "R10C1 来源 c36 TD 1×6 合并 1×6 值：部5上51" [ref=e648] [cursor=pointer]:
+                - generic [ref=e649]: R10C1 · c36
+                - generic [ref=e650]: 合并 1×6
+                - generic [ref=e651]: 部5上51
+              - button "R10C7 来源 c37 TD 1×5 合并 1×5 值：部5下52" [ref=e652] [cursor=pointer]:
+                - generic [ref=e653]: R10C7 · c37
+                - generic [ref=e654]: 合并 1×5
+                - generic [ref=e655]: 部5下52
+            - row [ref=e656]:
+              - button "R11C1 来源 c38 TD 1×6 合并 1×6 值：部5上53" [ref=e657] [cursor=pointer]:
+                - generic [ref=e658]: R11C1 · c38
+                - generic [ref=e659]: 合并 1×6
+                - generic [ref=e660]: 部5上53
+              - button "R11C7 来源 c39 TD 1×5 合并 1×5 值：部5下54" [ref=e661] [cursor=pointer]:
+                - generic [ref=e662]: R11C7 · c39
+                - generic [ref=e663]: 合并 1×5
+                - generic [ref=e664]: 部5下54
+            - row [ref=e665]:
+              - button "R12C0 来源 c40 TH scope=row 2×1 合并 2×1 值：部门6" [ref=e666] [cursor=pointer]:
+                - generic [ref=e667]: R12C0 · c40
+                - generic [ref=e668]: 合并 2×1
+                - generic [ref=e669]: 部门6
+              - button "R12C1 来源 c41 TD 1×6 合并 1×6 值：部6上61" [ref=e670] [cursor=pointer]:
+                - generic [ref=e671]: R12C1 · c41
+                - generic [ref=e672]: 合并 1×6
+                - generic [ref=e673]: 部6上61
+              - button "R12C7 来源 c42 TD 1×5 合并 1×5 值：部6下62" [ref=e674] [cursor=pointer]:
+                - generic [ref=e675]: R12C7 · c42
+                - generic [ref=e676]: 合并 1×5
+                - generic [ref=e677]: 部6下62
+            - row [ref=e678]:
+              - button "R13C1 来源 c43 TD 1×6 合并 1×6 值：部6上63" [ref=e679] [cursor=pointer]:
+                - generic [ref=e680]: R13C1 · c43
+                - generic [ref=e681]: 合并 1×6
+                - generic [ref=e682]: 部6上63
+              - button "R13C7 来源 c44 TD 1×5 合并 1×5 值：部6下64" [ref=e683] [cursor=pointer]:
+                - generic [ref=e684]: R13C7 · c44
+                - generic [ref=e685]: 合并 1×5
+                - generic [ref=e686]: 部6下64
+            - row [ref=e687]:
+              - button "R14C0 来源 c45 TH scope=row 2×1 合并 2×1 值：部门7" [ref=e688] [cursor=pointer]:
+                - generic [ref=e689]: R14C0 · c45
+                - generic [ref=e690]: 合并 2×1
+                - generic [ref=e691]: 部门7
+              - button "R14C1 来源 c46 TD 1×6 合并 1×6 值：部7上71" [ref=e692] [cursor=pointer]:
+                - generic [ref=e693]: R14C1 · c46
+                - generic [ref=e694]: 合并 1×6
+                - generic [ref=e695]: 部7上71
+              - button "R14C7 来源 c47 TD 1×5 合并 1×5 值：部7下72" [ref=e696] [cursor=pointer]:
+                - generic [ref=e697]: R14C7 · c47
+                - generic [ref=e698]: 合并 1×5
+                - generic [ref=e699]: 部7下72
+            - row [ref=e700]:
+              - button "R15C1 来源 c48 TD 1×6 合并 1×6 值：部7上73" [ref=e701] [cursor=pointer]:
+                - generic [ref=e702]: R15C1 · c48
+                - generic [ref=e703]: 合并 1×6
+                - generic [ref=e704]: 部7上73
+              - button "R15C7 来源 c49 TD 1×5 合并 1×5 值：部7下74" [ref=e705] [cursor=pointer]:
+                - generic [ref=e706]: R15C7 · c49
+                - generic [ref=e707]: 合并 1×5
+                - generic [ref=e708]: 部7下74
+            - row [ref=e709]:
+              - button "R16C0 来源 c50 TH scope=row 2×1 合并 2×1 值：部门8" [ref=e710] [cursor=pointer]:
+                - generic [ref=e711]: R16C0 · c50
+                - generic [ref=e712]: 合并 2×1
+                - generic [ref=e713]: 部门8
+              - button "R16C1 来源 c51 TD 1×6 合并 1×6 值：部8上81" [ref=e714] [cursor=pointer]:
+                - generic [ref=e715]: R16C1 · c51
+                - generic [ref=e716]: 合并 1×6
+                - generic [ref=e717]: 部8上81
+              - button "R16C7 来源 c52 TD 1×5 合并 1×5 值：部8下82" [ref=e718] [cursor=pointer]:
+                - generic [ref=e719]: R16C7 · c52
+                - generic [ref=e720]: 合并 1×5
+                - generic [ref=e721]: 部8下82
+            - row [ref=e722]:
+              - button "R17C1 来源 c53 TD 1×6 合并 1×6 值：部8上83" [ref=e723] [cursor=pointer]:
+                - generic [ref=e724]: R17C1 · c53
+                - generic [ref=e725]: 合并 1×6
+                - generic [ref=e726]: 部8上83
+              - button "R17C7 来源 c54 TD 1×5 合并 1×5 值：部8下84" [ref=e727] [cursor=pointer]:
+                - generic [ref=e728]: R17C7 · c54
+                - generic [ref=e729]: 合并 1×5
+                - generic [ref=e730]: 部8下84
+            - row [ref=e731]:
+              - button "R18C0 来源 c55 TH scope=row 2×1 合并 2×1 值：部门9" [ref=e732] [cursor=pointer]:
+                - generic [ref=e733]: R18C0 · c55
+                - generic [ref=e734]: 合并 2×1
+                - generic [ref=e735]: 部门9
+              - button "R18C1 来源 c56 TD 1×6 合并 1×6 值：部9上91" [ref=e736] [cursor=pointer]:
+                - generic [ref=e737]: R18C1 · c56
+                - generic [ref=e738]: 合并 1×6
+                - generic [ref=e739]: 部9上91
+              - button "R18C7 来源 c57 TD 1×5 合并 1×5 值：部9下92" [ref=e740] [cursor=pointer]:
+                - generic [ref=e741]: R18C7 · c57
+                - generic [ref=e742]: 合并 1×5
+                - generic [ref=e743]: 部9下92
+            - row [ref=e744]:
+              - button "R19C1 来源 c58 TD 1×6 合并 1×6 值：部9上93" [ref=e745] [cursor=pointer]:
+                - generic [ref=e746]: R19C1 · c58
+                - generic [ref=e747]: 合并 1×6
+                - generic [ref=e748]: 部9上93
+              - button "R19C7 来源 c59 TD 1×5 合并 1×5 值：部9下94" [ref=e749] [cursor=pointer]:
+                - generic [ref=e750]: R19C7 · c59
+                - generic [ref=e751]: 合并 1×5
+                - generic [ref=e752]: 部9下94
+            - row [ref=e753]:
+              - button "R20C0 来源 c60 TH scope=row 2×1 合并 2×1 值：部门10" [ref=e754] [cursor=pointer]:
+                - generic [ref=e755]: R20C0 · c60
+                - generic [ref=e756]: 合并 2×1
+                - generic [ref=e757]: 部门10
+              - button "R20C1 来源 c61 TD 1×6 合并 1×6 值：部10上101" [ref=e758] [cursor=pointer]:
+                - generic [ref=e759]: R20C1 · c61
+                - generic [ref=e760]: 合并 1×6
+                - generic [ref=e761]: 部10上101
+              - button "R20C7 来源 c62 TD 1×5 合并 1×5 值：部10下102" [ref=e762] [cursor=pointer]:
+                - generic [ref=e763]: R20C7 · c62
+                - generic [ref=e764]: 合并 1×5
+                - generic [ref=e765]: 部10下102
+            - row [ref=e766]:
+              - button "R21C1 来源 c63 TD 1×6 合并 1×6 值：部10上103" [ref=e767] [cursor=pointer]:
+                - generic [ref=e768]: R21C1 · c63
+                - generic [ref=e769]: 合并 1×6
+                - generic [ref=e770]: 部10上103
+              - button "R21C7 来源 c64 TD 1×5 合并 1×5 值：部10下104" [ref=e771] [cursor=pointer]:
+                - generic [ref=e772]: R21C7 · c64
+                - generic [ref=e773]: 合并 1×5
+                - generic [ref=e774]: 部10下104
+            - row [ref=e775]:
+              - button "R22C0 来源 c65 TH scope=row 2×1 合并 2×1 值：部门11" [ref=e776] [cursor=pointer]:
+                - generic [ref=e777]: R22C0 · c65
+                - generic [ref=e778]: 合并 2×1
+                - generic [ref=e779]: 部门11
+              - button "R22C1 来源 c66 TD 1×6 合并 1×6 值：部11上111" [ref=e780] [cursor=pointer]:
+                - generic [ref=e781]: R22C1 · c66
+                - generic [ref=e782]: 合并 1×6
+                - generic [ref=e783]: 部11上111
+              - button "R22C7 来源 c67 TD 1×5 合并 1×5 值：部11下112" [ref=e784] [cursor=pointer]:
+                - generic [ref=e785]: R22C7 · c67
+                - generic [ref=e786]: 合并 1×5
+                - generic [ref=e787]: 部11下112
+            - row [ref=e788]:
+              - button "R23C1 来源 c68 TD 1×6 合并 1×6 值：部11上113" [ref=e789] [cursor=pointer]:
+                - generic [ref=e790]: R23C1 · c68
+                - generic [ref=e791]: 合并 1×6
+                - generic [ref=e792]: 部11上113
+              - button "R23C7 来源 c69 TD 1×5 合并 1×5 值：部11下114" [ref=e793] [cursor=pointer]:
+                - generic [ref=e794]: R23C7 · c69
+                - generic [ref=e795]: 合并 1×5
+                - generic [ref=e796]: 部11下114
+            - row [ref=e797]:
+              - button "R24C0 来源 c70 TH scope=row 2×1 合并 2×1 值：部门12" [ref=e798] [cursor=pointer]:
+                - generic [ref=e799]: R24C0 · c70
+                - generic [ref=e800]: 合并 2×1
+                - generic [ref=e801]: 部门12
+              - button "R24C1 来源 c71 TD 1×6 合并 1×6 值：部12上121" [ref=e802] [cursor=pointer]:
+                - generic [ref=e803]: R24C1 · c71
+                - generic [ref=e804]: 合并 1×6
+                - generic [ref=e805]: 部12上121
+              - button "R24C7 来源 c72 TD 1×5 合并 1×5 值：部12下122" [ref=e806] [cursor=pointer]:
+                - generic [ref=e807]: R24C7 · c72
+                - generic [ref=e808]: 合并 1×5
+                - generic [ref=e809]: 部12下122
+            - row [ref=e810]:
+              - button "R25C1 来源 c73 TD 1×6 合并 1×6 值：部12上123" [ref=e811] [cursor=pointer]:
+                - generic [ref=e812]: R25C1 · c73
+                - generic [ref=e813]: 合并 1×6
+                - generic [ref=e814]: 部12上123
+              - button "R25C7 来源 c74 TD 1×5 合并 1×5 值：部12下124" [ref=e815] [cursor=pointer]:
+                - generic [ref=e816]: R25C7 · c74
+                - generic [ref=e817]: 合并 1×5
+                - generic [ref=e818]: 部12下124
+            - row [ref=e819]:
+              - button "R26C0 来源 c75 TH scope=row 2×1 合并 2×1 值：部门13" [ref=e820] [cursor=pointer]:
+                - generic [ref=e821]: R26C0 · c75
+                - generic [ref=e822]: 合并 2×1
+                - generic [ref=e823]: 部门13
+              - button "R26C1 来源 c76 TD 1×6 合并 1×6 值：部13上131" [ref=e824] [cursor=pointer]:
+                - generic [ref=e825]: R26C1 · c76
+                - generic [ref=e826]: 合并 1×6
+                - generic [ref=e827]: 部13上131
+              - button "R26C7 来源 c77 TD 1×5 合并 1×5 值：部13下132" [ref=e828] [cursor=pointer]:
+                - generic [ref=e829]: R26C7 · c77
+                - generic [ref=e830]: 合并 1×5
+                - generic [ref=e831]: 部13下132
+            - row [ref=e832]:
+              - button "R27C1 来源 c78 TD 1×6 合并 1×6 值：部13上133" [ref=e833] [cursor=pointer]:
+                - generic [ref=e834]: R27C1 · c78
+                - generic [ref=e835]: 合并 1×6
+                - generic [ref=e836]: 部13上133
+              - button "R27C7 来源 c79 TD 1×5 合并 1×5 值：部13下134" [ref=e837] [cursor=pointer]:
+                - generic [ref=e838]: R27C7 · c79
+                - generic [ref=e839]: 合并 1×5
+                - generic [ref=e840]: 部13下134
+            - row [ref=e841]:
+              - button "R28C0 来源 c80 TH scope=row 2×1 合并 2×1 值：部门14" [ref=e842] [cursor=pointer]:
+                - generic [ref=e843]: R28C0 · c80
+                - generic [ref=e844]: 合并 2×1
+                - generic [ref=e845]: 部门14
+              - button "R28C1 来源 c81 TD 1×6 合并 1×6 值：部14上141" [ref=e846] [cursor=pointer]:
+                - generic [ref=e847]: R28C1 · c81
+                - generic [ref=e848]: 合并 1×6
+                - generic [ref=e849]: 部14上141
+              - button "R28C7 来源 c82 TD 1×5 合并 1×5 值：部14下142" [ref=e850] [cursor=pointer]:
+                - generic [ref=e851]: R28C7 · c82
+                - generic [ref=e852]: 合并 1×5
+                - generic [ref=e853]: 部14下142
+            - row [ref=e854]:
+              - button "R29C1 来源 c83 TD 1×6 合并 1×6 值：部14上143" [ref=e855] [cursor=pointer]:
+                - generic [ref=e856]: R29C1 · c83
+                - generic [ref=e857]: 合并 1×6
+                - generic [ref=e858]: 部14上143
+              - button "R29C7 来源 c84 TD 1×5 合并 1×5 值：部14下144" [ref=e859] [cursor=pointer]:
+                - generic [ref=e860]: R29C7 · c84
+                - generic [ref=e861]: 合并 1×5
+                - generic [ref=e862]: 部14下144
+            - row [ref=e863]:
+              - button "R30C0 来源 c85 TH scope=row 2×1 合并 2×1 值：部门15" [ref=e864] [cursor=pointer]:
+                - generic [ref=e865]: R30C0 · c85
+                - generic [ref=e866]: 合并 2×1
+                - generic [ref=e867]: 部门15
+              - button "R30C1 来源 c86 TD 1×6 合并 1×6 值：部15上151" [ref=e868] [cursor=pointer]:
+                - generic [ref=e869]: R30C1 · c86
+                - generic [ref=e870]: 合并 1×6
+                - generic [ref=e871]: 部15上151
+              - button "R30C7 来源 c87 TD 1×5 合并 1×5 值：部15下152" [ref=e872] [cursor=pointer]:
+                - generic [ref=e873]: R30C7 · c87
+                - generic [ref=e874]: 合并 1×5
+                - generic [ref=e875]: 部15下152
+            - row [ref=e876]:
+              - button "R31C1 来源 c88 TD 1×6 合并 1×6 值：部15上153" [ref=e877] [cursor=pointer]:
+                - generic [ref=e878]: R31C1 · c88
+                - generic [ref=e879]: 合并 1×6
+                - generic [ref=e880]: 部15上153
+              - button "R31C7 来源 c89 TD 1×5 合并 1×5 值：部15下154" [ref=e881] [cursor=pointer]:
+                - generic [ref=e882]: R31C7 · c89
+                - generic [ref=e883]: 合并 1×5
+                - generic [ref=e884]: 部15下154
+  - region "状态栏" [ref=e885]:
+    - heading "状态栏" [level=2] [ref=e886]
+    - generic [ref=e887]:
+      - term [ref=e888]: 结构碰撞证明
+      - definition [ref=e889]:
+        - generic [ref=e890]:
+          - generic [ref=e891]: CERTIFIED_COLLISION
+          - text: 结构碰撞已证实：HEADER_ASSOCIATION_CHANGED。源格 c14， 拆分代价 1。
+      - term [ref=e892]: Markdown 对账
+      - definition [ref=e893]:
+        - generic [ref=e894]:
+          - generic [ref=e895]: NOT_SUPPLIED
+          - text: 未输入 M；上方显示的是生成的 F(A) 预览。
+    - paragraph [ref=e896]: 两项分别显示，不合并为“安全 / 危险”分数；本工具不输出安全评分。
+    - generic [ref=e897]:
+      - paragraph [ref=e898]: 断言 1：A ≠ B（canonical cell graph 不同）
+      - paragraph [ref=e899]: A 图 SHA-256：2bb5b18f8952…B 图 SHA-256：df497c82cb92…
+      - paragraph [ref=e900]: 断言 2：F(A) = F(B)（UTF-8 逐字节相同）
+      - paragraph [ref=e901]: Markdown SHA-256：ad5a33554124…
+      - img "示意图：左表 A 与右表 B 的合并结构不同（A 不等于 B），但两者生成的 Markdown 完全相同（F(A) 等于 F(B)）。" [ref=e902]:
+        - generic [ref=e904]: 表 A
+        - generic [ref=e906]: 表 B
+        - generic [ref=e907]: A ≠ B（结构不同）
+        - generic [ref=e908]: F(A) = F(B)（同一份 Markdown）
+      - paragraph [ref=e909]: 上图说明：左表 A 的合并格在右表 B 中被拆开，两张表结构不同，但中间 Markdown 完全相同——只看 Markdown 无法确定原表合并关系。
+  - region "交接与导出" [ref=e910]:
+    - heading "交接与导出" [level=2] [ref=e911]
+    - tablist "交接稿与证据" [ref=e912]:
+      - tab "逐格交接稿" [selected] [ref=e913] [cursor=pointer]
+      - tab "可审查证据 JSON" [ref=e914] [cursor=pointer]
+    - tabpanel [ref=e915]:
+      - generic "逐格交接稿" [ref=e916]: "# TableFork 逐格交接稿 tablefork.report/v1 # 预设：（自定义输入） 策略：ORIGIN_EMPTY # 行标题/列标题未知时写 ?，不得编造。 [R2C1 source=c15] 行标题: 部门1 | 列标题: 上半年 > 上1月 | 数值: 部1上11 [R2C2 source=c15] 行标题: 部门1 | 列标题: 上半年 > 上2月 | 数值: 部1上11 [R2C3 source=c15] 行标题: 部门1 | 列标题: 上半年 > 上3月 | 数值: 部1上11 [R2C4 source=c15] 行标题: 部门1 | 列标题: 上半年 > 上4月 | 数值: 部1上11 [R2C5 source=c15] 行标题: 部门1 | 列标题: 上半年 > 上5月 | 数值: 部1上11 [R2C6 source=c15] 行标题: 部门1 | 列标题: 上半年 > 上6月 | 数值: 部1上11 [R2C7 source=c16] 行标题: 部门1 | 列标题: 下半年 > 下1月 | 数值: 部1下12 [R2C8 source=c16] 行标题: 部门1 | 列标题: 下半年 > 下2月 | 数值: 部1下12 [R2C9 source=c16] 行标题: 部门1 | 列标题: 下半年 > 下3月 | 数值: 部1下12 [R2C10 source=c16] 行标题: 部门1 | 列标题: 下半年 > 下4月 | 数值: 部1下12 [R2C11 source=c16] 行标题: 部门1 | 列标题: 下半年 > 下5月 | 数值: 部1下12 [R3C1 source=c17] 行标题: 部门1 | 列标题: 上半年 > 上1月 | 数值: 部1上13 [R3C2 source=c17] 行标题: 部门1 | 列标题: 上半年 > 上2月 | 数值: 部1上13 [R3C3 source=c17] 行标题: 部门1 | 列标题: 上半年 > 上3月 | 数值: 部1上13 [R3C4 source=c17] 行标题: 部门1 | 列标题: 上半年 > 上4月 | 数值: 部1上13 [R3C5 source=c17] 行标题: 部门1 | 列标题: 上半年 > 上5月 | 数值: 部1上13 [R3C6 source=c17] 行标题: 部门1 | 列标题: 上半年 > 上6月 | 数值: 部1上13 [R3C7 source=c18] 行标题: 部门1 | 列标题: 下半年 > 下1月 | 数值: 部1下14 [R3C8 source=c18] 行标题: 部门1 | 列标题: 下半年 > 下2月 | 数值: 部1下14 [R3C9 source=c18] 行标题: 部门1 | 列标题: 下半年 > 下3月 | 数值: 部1下14 [R3C10 source=c18] 行标题: 部门1 | 列标题: 下半年 > 下4月 | 数值: 部1下14 [R3C11 source=c18] 行标题: 部门1 | 列标题: 下半年 > 下5月 | 数值: 部1下14 [R4C1 source=c20] 行标题: 部门2 | 列标题: 上半年 > 上1月 | 数值: 部2上21 [R4C2 source=c20] 行标题: 部门2 | 列标题: 上半年 > 上2月 | 数值: 部2上21 [R4C3 source=c20] 行标题: 部门2 | 列标题: 上半年 > 上3月 | 数值: 部2上21 [R4C4 source=c20] 行标题: 部门2 | 列标题: 上半年 > 上4月 | 数值: 部2上21 [R4C5 source=c20] 行标题: 部门2 | 列标题: 上半年 > 上5月 | 数值: 部2上21 [R4C6 source=c20] 行标题: 部门2 | 列标题: 上半年 > 上6月 | 数值: 部2上21 [R4C7 source=c21] 行标题: 部门2 | 列标题: 下半年 > 下1月 | 数值: 部2下22 [R4C8 source=c21] 行标题: 部门2 | 列标题: 下半年 > 下2月 | 数值: 部2下22 [R4C9 source=c21] 行标题: 部门2 | 列标题: 下半年 > 下3月 | 数值: 部2下22 [R4C10 source=c21] 行标题: 部门2 | 列标题: 下半年 > 下4月 | 数值: 部2下22 [R4C11 source=c21] 行标题: 部门2 | 列标题: 下半年 > 下5月 | 数值: 部2下22 [R5C1 source=c22] 行标题: 部门2 | 列标题: 上半年 > 上1月 | 数值: 部2上23 [R5C2 source=c22] 行标题: 部门2 | 列标题: 上半年 > 上2月 | 数值: 部2上23 [R5C3 source=c22] 行标题: 部门2 | 列标题: 上半年 > 上3月 | 数值: 部2上23 [R5C4 source=c22] 行标题: 部门2 | 列标题: 上半年 > 上4月 | 数值: 部2上23 [R5C5 source=c22] 行标题: 部门2 | 列标题: 上半年 > 上5月 | 数值: 部2上23 [R5C6 source=c22] 行标题: 部门2 | 列标题: 上半年 > 上6月 | 数值: 部2上23 [R5C7 source=c23] 行标题: 部门2 | 列标题: 下半年 > 下1月 | 数值: 部2下24 [R5C8 source=c23] 行标题: 部门2 | 列标题: 下半年 > 下2月 | 数值: 部2下24 [R5C9 source=c23] 行标题: 部门2 | 列标题: 下半年 > 下3月 | 数值: 部2下24 [R5C10 source=c23] 行标题: 部门2 | 列标题: 下半年 > 下4月 | 数值: 部2下24 [R5C11 source=c23] 行标题: 部门2 | 列标题: 下半年 > 下5月 | 数值: 部2下24 [R6C1 source=c25] 行标题: 部门3 | 列标题: 上半年 > 上1月 | 数值: 部3上31 [R6C2 source=c25] 行标题: 部门3 | 列标题: 上半年 > 上2月 | 数值: 部3上31 [R6C3 source=c25] 行标题: 部门3 | 列标题: 上半年 > 上3月 | 数值: 部3上31 [R6C4 source=c25] 行标题: 部门3 | 列标题: 上半年 > 上4月 | 数值: 部3上31 [R6C5 source=c25] 行标题: 部门3 | 列标题: 上半年 > 上5月 | 数值: 部3上31 [R6C6 source=c25] 行标题: 部门3 | 列标题: 上半年 > 上6月 | 数值: 部3上31 [R6C7 source=c26] 行标题: 部门3 | 列标题: 下半年 > 下1月 | 数值: 部3下32 [R6C8 source=c26] 行标题: 部门3 | 列标题: 下半年 > 下2月 | 数值: 部3下32 [R6C9 source=c26] 行标题: 部门3 | 列标题: 下半年 > 下3月 | 数值: 部3下32 [R6C10 source=c26] 行标题: 部门3 | 列标题: 下半年 > 下4月 | 数值: 部3下32 [R6C11 source=c26] 行标题: 部门3 | 列标题: 下半年 > 下5月 | 数值: 部3下32 [R7C1 source=c27] 行标题: 部门3 | 列标题: 上半年 > 上1月 | 数值: 部3上33 [R7C2 source=c27] 行标题: 部门3 | 列标题: 上半年 > 上2月 | 数值: 部3上33 [R7C3 source=c27] 行标题: 部门3 | 列标题: 上半年 > 上3月 | 数值: 部3上33 [R7C4 source=c27] 行标题: 部门3 | 列标题: 上半年 > 上4月 | 数值: 部3上33 [R7C5 source=c27] 行标题: 部门3 | 列标题: 上半年 > 上5月 | 数值: 部3上33 [R7C6 source=c27] 行标题: 部门3 | 列标题: 上半年 > 上6月 | 数值: 部3上33 [R7C7 source=c28] 行标题: 部门3 | 列标题: 下半年 > 下1月 | 数值: 部3下34 [R7C8 source=c28] 行标题: 部门3 | 列标题: 下半年 > 下2月 | 数值: 部3下34 [R7C9 source=c28] 行标题: 部门3 | 列标题: 下半年 > 下3月 | 数值: 部3下34 [R7C10 source=c28] 行标题: 部门3 | 列标题: 下半年 > 下4月 | 数值: 部3下34 [R7C11 source=c28] 行标题: 部门3 | 列标题: 下半年 > 下5月 | 数值: 部3下34 [R8C1 source=c30] 行标题: 部门4 | 列标题: 上半年 > 上1月 | 数值: 部4上41 [R8C2 source=c30] 行标题: 部门4 | 列标题: 上半年 > 上2月 | 数值: 部4上41 [R8C3 source=c30] 行标题: 部门4 | 列标题: 上半年 > 上3月 | 数值: 部4上41 [R8C4 source=c30] 行标题: 部门4 | 列标题: 上半年 > 上4月 | 数值: 部4上41 [R8C5 source=c30] 行标题: 部门4 | 列标题: 上半年 > 上5月 | 数值: 部4上41 [R8C6 source=c30] 行标题: 部门4 | 列标题: 上半年 > 上6月 | 数值: 部4上41 [R8C7 source=c31] 行标题: 部门4 | 列标题: 下半年 > 下1月 | 数值: 部4下42 [R8C8 source=c31] 行标题: 部门4 | 列标题: 下半年 > 下2月 | 数值: 部4下42 [R8C9 source=c31] 行标题: 部门4 | 列标题: 下半年 > 下3月 | 数值: 部4下42 [R8C10 source=c31] 行标题: 部门4 | 列标题: 下半年 > 下4月 | 数值: 部4下42 [R8C11 source=c31] 行标题: 部门4 | 列标题: 下半年 > 下5月 | 数值: 部4下42 [R9C1 source=c32] 行标题: 部门4 | 列标题: 上半年 > 上1月 | 数值: 部4上43 [R9C2 source=c32] 行标题: 部门4 | 列标题: 上半年 > 上2月 | 数值: 部4上43 [R9C3 source=c32] 行标题: 部门4 | 列标题: 上半年 > 上3月 | 数值: 部4上43 [R9C4 source=c32] 行标题: 部门4 | 列标题: 上半年 > 上4月 | 数值: 部4上43 [R9C5 source=c32] 行标题: 部门4 | 列标题: 上半年 > 上5月 | 数值: 部4上43 [R9C6 source=c32] 行标题: 部门4 | 列标题: 上半年 > 上6月 | 数值: 部4上43 [R9C7 source=c33] 行标题: 部门4 | 列标题: 下半年 > 下1月 | 数值: 部4下44 [R9C8 source=c33] 行标题: 部门4 | 列标题: 下半年 > 下2月 | 数值: 部4下44 [R9C9 source=c33] 行标题: 部门4 | 列标题: 下半年 > 下3月 | 数值: 部4下44 [R9C10 source=c33] 行标题: 部门4 | 列标题: 下半年 > 下4月 | 数值: 部4下44 [R9C11 source=c33] 行标题: 部门4 | 列标题: 下半年 > 下5月 | 数值: 部4下44 [R10C1 source=c35] 行标题: 部门5 | 列标题: 上半年 > 上1月 | 数值: 部5上51 [R10C2 source=c35] 行标题: 部门5 | 列标题: 上半年 > 上2月 | 数值: 部5上51 [R10C3 source=c35] 行标题: 部门5 | 列标题: 上半年 > 上3月 | 数值: 部5上51 [R10C4 source=c35] 行标题: 部门5 | 列标题: 上半年 > 上4月 | 数值: 部5上51 [R10C5 source=c35] 行标题: 部门5 | 列标题: 上半年 > 上5月 | 数值: 部5上51 [R10C6 source=c35] 行标题: 部门5 | 列标题: 上半年 > 上6月 | 数值: 部5上51 [R10C7 source=c36] 行标题: 部门5 | 列标题: 下半年 > 下1月 | 数值: 部5下52 [R10C8 source=c36] 行标题: 部门5 | 列标题: 下半年 > 下2月 | 数值: 部5下52 [R10C9 source=c36] 行标题: 部门5 | 列标题: 下半年 > 下3月 | 数值: 部5下52 [R10C10 source=c36] 行标题: 部门5 | 列标题: 下半年 > 下4月 | 数值: 部5下52 [R10C11 source=c36] 行标题: 部门5 | 列标题: 下半年 > 下5月 | 数值: 部5下52 [R11C1 source=c37] 行标题: 部门5 | 列标题: 上半年 > 上1月 | 数值: 部5上53 [R11C2 source=c37] 行标题: 部门5 | 列标题: 上半年 > 上2月 | 数值: 部5上53 [R11C3 source=c37] 行标题: 部门5 | 列标题: 上半年 > 上3月 | 数值: 部5上53 [R11C4 source=c37] 行标题: 部门5 | 列标题: 上半年 > 上4月 | 数值: 部5上53 [R11C5 source=c37] 行标题: 部门5 | 列标题: 上半年 > 上5月 | 数值: 部5上53 [R11C6 source=c37] 行标题: 部门5 | 列标题: 上半年 > 上6月 | 数值: 部5上53 [R11C7 source=c38] 行标题: 部门5 | 列标题: 下半年 > 下1月 | 数值: 部5下54 [R11C8 source=c38] 行标题: 部门5 | 列标题: 下半年 > 下2月 | 数值: 部5下54 [R11C9 source=c38] 行标题: 部门5 | 列标题: 下半年 > 下3月 | 数值: 部5下54 [R11C10 source=c38] 行标题: 部门5 | 列标题: 下半年 > 下4月 | 数值: 部5下54 [R11C11 source=c38] 行标题: 部门5 | 列标题: 下半年 > 下5月 | 数值: 部5下54 [R12C1 source=c40] 行标题: 部门6 | 列标题: 上半年 > 上1月 | 数值: 部6上61 [R12C2 source=c40] 行标题: 部门6 | 列标题: 上半年 > 上2月 | 数值: 部6上61 [R12C3 source=c40] 行标题: 部门6 | 列标题: 上半年 > 上3月 | 数值: 部6上61 [R12C4 source=c40] 行标题: 部门6 | 列标题: 上半年 > 上4月 | 数值: 部6上61 [R12C5 source=c40] 行标题: 部门6 | 列标题: 上半年 > 上5月 | 数值: 部6上61 [R12C6 source=c40] 行标题: 部门6 | 列标题: 上半年 > 上6月 | 数值: 部6上61 [R12C7 source=c41] 行标题: 部门6 | 列标题: 下半年 > 下1月 | 数值: 部6下62 [R12C8 source=c41] 行标题: 部门6 | 列标题: 下半年 > 下2月 | 数值: 部6下62 [R12C9 source=c41] 行标题: 部门6 | 列标题: 下半年 > 下3月 | 数值: 部6下62 [R12C10 source=c41] 行标题: 部门6 | 列标题: 下半年 > 下4月 | 数值: 部6下62 [R12C11 source=c41] 行标题: 部门6 | 列标题: 下半年 > 下5月 | 数值: 部6下62 [R13C1 source=c42] 行标题: 部门6 | 列标题: 上半年 > 上1月 | 数值: 部6上63 [R13C2 source=c42] 行标题: 部门6 | 列标题: 上半年 > 上2月 | 数值: 部6上63 [R13C3 source=c42] 行标题: 部门6 | 列标题: 上半年 > 上3月 | 数值: 部6上63 [R13C4 source=c42] 行标题: 部门6 | 列标题: 上半年 > 上4月 | 数值: 部6上63 [R13C5 source=c42] 行标题: 部门6 | 列标题: 上半年 > 上5月 | 数值: 部6上63 [R13C6 source=c42] 行标题: 部门6 | 列标题: 上半年 > 上6月 | 数值: 部6上63 [R13C7 source=c43] 行标题: 部门6 | 列标题: 下半年 > 下1月 | 数值: 部6下64 [R13C8 source=c43] 行标题: 部门6 | 列标题: 下半年 > 下2月 | 数值: 部6下64 [R13C9 source=c43] 行标题: 部门6 | 列标题: 下半年 > 下3月 | 数值: 部6下64 [R13C10 source=c43] 行标题: 部门6 | 列标题: 下半年 > 下4月 | 数值: 部6下64 [R13C11 source=c43] 行标题: 部门6 | 列标题: 下半年 > 下5月 | 数值: 部6下64 [R14C1 source=c45] 行标题: 部门7 | 列标题: 上半年 > 上1月 | 数值: 部7上71 [R14C2 source=c45] 行标题: 部门7 | 列标题: 上半年 > 上2月 | 数值: 部7上71 [R14C3 source=c45] 行标题: 部门7 | 列标题: 上半年 > 上3月 | 数值: 部7上71 [R14C4 source=c45] 行标题: 部门7 | 列标题: 上半年 > 上4月 | 数值: 部7上71 [R14C5 source=c45] 行标题: 部门7 | 列标题: 上半年 > 上5月 | 数值: 部7上71 [R14C6 source=c45] 行标题: 部门7 | 列标题: 上半年 > 上6月 | 数值: 部7上71 [R14C7 source=c46] 行标题: 部门7 | 列标题: 下半年 > 下1月 | 数值: 部7下72 [R14C8 source=c46] 行标题: 部门7 | 列标题: 下半年 > 下2月 | 数值: 部7下72 [R14C9 source=c46] 行标题: 部门7 | 列标题: 下半年 > 下3月 | 数值: 部7下72 [R14C10 source=c46] 行标题: 部门7 | 列标题: 下半年 > 下4月 | 数值: 部7下72 [R14C11 source=c46] 行标题: 部门7 | 列标题: 下半年 > 下5月 | 数值: 部7下72 [R15C1 source=c47] 行标题: 部门7 | 列标题: 上半年 > 上1月 | 数值: 部7上73 [R15C2 source=c47] 行标题: 部门7 | 列标题: 上半年 > 上2月 | 数值: 部7上73 [R15C3 source=c47] 行标题: 部门7 | 列标题: 上半年 > 上3月 | 数值: 部7上73 [R15C4 source=c47] 行标题: 部门7 | 列标题: 上半年 > 上4月 | 数值: 部7上73 [R15C5 source=c47] 行标题: 部门7 | 列标题: 上半年 > 上5月 | 数值: 部7上73 [R15C6 source=c47] 行标题: 部门7 | 列标题: 上半年 > 上6月 | 数值: 部7上73 [R15C7 source=c48] 行标题: 部门7 | 列标题: 下半年 > 下1月 | 数值: 部7下74 [R15C8 source=c48] 行标题: 部门7 | 列标题: 下半年 > 下2月 | 数值: 部7下74 [R15C9 source=c48] 行标题: 部门7 | 列标题: 下半年 > 下3月 | 数值: 部7下74 [R15C10 source=c48] 行标题: 部门7 | 列标题: 下半年 > 下4月 | 数值: 部7下74 [R15C11 source=c48] 行标题: 部门7 | 列标题: 下半年 > 下5月 | 数值: 部7下74 [R16C1 source=c50] 行标题: 部门8 | 列标题: 上半年 > 上1月 | 数值: 部8上81 [R16C2 source=c50] 行标题: 部门8 | 列标题: 上半年 > 上2月 | 数值: 部8上81 [R16C3 source=c50] 行标题: 部门8 | 列标题: 上半年 > 上3月 | 数值: 部8上81 [R16C4 source=c50] 行标题: 部门8 | 列标题: 上半年 > 上4月 | 数值: 部8上81 [R16C5 source=c50] 行标题: 部门8 | 列标题: 上半年 > 上5月 | 数值: 部8上81 [R16C6 source=c50] 行标题: 部门8 | 列标题: 上半年 > 上6月 | 数值: 部8上81 [R16C7 source=c51] 行标题: 部门8 | 列标题: 下半年 > 下1月 | 数值: 部8下82 [R16C8 source=c51] 行标题: 部门8 | 列标题: 下半年 > 下2月 | 数值: 部8下82 [R16C9 source=c51] 行标题: 部门8 | 列标题: 下半年 > 下3月 | 数值: 部8下82 [R16C10 source=c51] 行标题: 部门8 | 列标题: 下半年 > 下4月 | 数值: 部8下82 [R16C11 source=c51] 行标题: 部门8 | 列标题: 下半年 > 下5月 | 数值: 部8下82 [R17C1 source=c52] 行标题: 部门8 | 列标题: 上半年 > 上1月 | 数值: 部8上83 [R17C2 source=c52] 行标题: 部门8 | 列标题: 上半年 > 上2月 | 数值: 部8上83 [R17C3 source=c52] 行标题: 部门8 | 列标题: 上半年 > 上3月 | 数值: 部8上83 [R17C4 source=c52] 行标题: 部门8 | 列标题: 上半年 > 上4月 | 数值: 部8上83 [R17C5 source=c52] 行标题: 部门8 | 列标题: 上半年 > 上5月 | 数值: 部8上83 [R17C6 source=c52] 行标题: 部门8 | 列标题: 上半年 > 上6月 | 数值: 部8上83 [R17C7 source=c53] 行标题: 部门8 | 列标题: 下半年 > 下1月 | 数值: 部8下84 [R17C8 source=c53] 行标题: 部门8 | 列标题: 下半年 > 下2月 | 数值: 部8下84 [R17C9 source=c53] 行标题: 部门8 | 列标题: 下半年 > 下3月 | 数值: 部8下84 [R17C10 source=c53] 行标题: 部门8 | 列标题: 下半年 > 下4月 | 数值: 部8下84 [R17C11 source=c53] 行标题: 部门8 | 列标题: 下半年 > 下5月 | 数值: 部8下84 [R18C1 source=c55] 行标题: 部门9 | 列标题: 上半年 > 上1月 | 数值: 部9上91 [R18C2 source=c55] 行标题: 部门9 | 列标题: 上半年 > 上2月 | 数值: 部9上91 [R18C3 source=c55] 行标题: 部门9 | 列标题: 上半年 > 上3月 | 数值: 部9上91 [R18C4 source=c55] 行标题: 部门9 | 列标题: 上半年 > 上4月 | 数值: 部9上91 [R18C5 source=c55] 行标题: 部门9 | 列标题: 上半年 > 上5月 | 数值: 部9上91 [R18C6 source=c55] 行标题: 部门9 | 列标题: 上半年 > 上6月 | 数值: 部9上91 [R18C7 source=c56] 行标题: 部门9 | 列标题: 下半年 > 下1月 | 数值: 部9下92 [R18C8 source=c56] 行标题: 部门9 | 列标题: 下半年 > 下2月 | 数值: 部9下92 [R18C9 source=c56] 行标题: 部门9 | 列标题: 下半年 > 下3月 | 数值: 部9下92 [R18C10 source=c56] 行标题: 部门9 | 列标题: 下半年 > 下4月 | 数值: 部9下92 [R18C11 source=c56] 行标题: 部门9 | 列标题: 下半年 > 下5月 | 数值: 部9下92 [R19C1 source=c57] 行标题: 部门9 | 列标题: 上半年 > 上1月 | 数值: 部9上93 [R19C2 source=c57] 行标题: 部门9 | 列标题: 上半年 > 上2月 | 数值: 部9上93 [R19C3 source=c57] 行标题: 部门9 | 列标题: 上半年 > 上3月 | 数值: 部9上93 [R19C4 source=c57] 行标题: 部门9 | 列标题: 上半年 > 上4月 | 数值: 部9上93 [R19C5 source=c57] 行标题: 部门9 | 列标题: 上半年 > 上5月 | 数值: 部9上93 [R19C6 source=c57] 行标题: 部门9 | 列标题: 上半年 > 上6月 | 数值: 部9上93 [R19C7 source=c58] 行标题: 部门9 | 列标题: 下半年 > 下1月 | 数值: 部9下94 [R19C8 source=c58] 行标题: 部门9 | 列标题: 下半年 > 下2月 | 数值: 部9下94 [R19C9 source=c58] 行标题: 部门9 | 列标题: 下半年 > 下3月 | 数值: 部9下94 [R19C10 source=c58] 行标题: 部门9 | 列标题: 下半年 > 下4月 | 数值: 部9下94 [R19C11 source=c58] 行标题: 部门9 | 列标题: 下半年 > 下5月 | 数值: 部9下94 [R20C1 source=c60] 行标题: 部门10 | 列标题: 上半年 > 上1月 | 数值: 部10上101 [R20C2 source=c60] 行标题: 部门10 | 列标题: 上半年 > 上2月 | 数值: 部10上101 [R20C3 source=c60] 行标题: 部门10 | 列标题: 上半年 > 上3月 | 数值: 部10上101 [R20C4 source=c60] 行标题: 部门10 | 列标题: 上半年 > 上4月 | 数值: 部10上101 [R20C5 source=c60] 行标题: 部门10 | 列标题: 上半年 > 上5月 | 数值: 部10上101 [R20C6 source=c60] 行标题: 部门10 | 列标题: 上半年 > 上6月 | 数值: 部10上101 [R20C7 source=c61] 行标题: 部门10 | 列标题: 下半年 > 下1月 | 数值: 部10下102 [R20C8 source=c61] 行标题: 部门10 | 列标题: 下半年 > 下2月 | 数值: 部10下102 [R20C9 source=c61] 行标题: 部门10 | 列标题: 下半年 > 下3月 | 数值: 部10下102 [R20C10 source=c61] 行标题: 部门10 | 列标题: 下半年 > 下4月 | 数值: 部10下102 [R20C11 source=c61] 行标题: 部门10 | 列标题: 下半年 > 下5月 | 数值: 部10下102 [R21C1 source=c62] 行标题: 部门10 | 列标题: 上半年 > 上1月 | 数值: 部10上103 [R21C2 source=c62] 行标题: 部门10 | 列标题: 上半年 > 上2月 | 数值: 部10上103 [R21C3 source=c62] 行标题: 部门10 | 列标题: 上半年 > 上3月 | 数值: 部10上103 [R21C4 source=c62] 行标题: 部门10 | 列标题: 上半年 > 上4月 | 数值: 部10上103 [R21C5 source=c62] 行标题: 部门10 | 列标题: 上半年 > 上5月 | 数值: 部10上103 [R21C6 source=c62] 行标题: 部门10 | 列标题: 上半年 > 上6月 | 数值: 部10上103 [R21C7 source=c63] 行标题: 部门10 | 列标题: 下半年 > 下1月 | 数值: 部10下104 [R21C8 source=c63] 行标题: 部门10 | 列标题: 下半年 > 下2月 | 数值: 部10下104 [R21C9 source=c63] 行标题: 部门10 | 列标题: 下半年 > 下3月 | 数值: 部10下104 [R21C10 source=c63] 行标题: 部门10 | 列标题: 下半年 > 下4月 | 数值: 部10下104 [R21C11 source=c63] 行标题: 部门10 | 列标题: 下半年 > 下5月 | 数值: 部10下104 [R22C1 source=c65] 行标题: 部门11 | 列标题: 上半年 > 上1月 | 数值: 部11上111 [R22C2 source=c65] 行标题: 部门11 | 列标题: 上半年 > 上2月 | 数值: 部11上111 [R22C3 source=c65] 行标题: 部门11 | 列标题: 上半年 > 上3月 | 数值: 部11上111 [R22C4 source=c65] 行标题: 部门11 | 列标题: 上半年 > 上4月 | 数值: 部11上111 [R22C5 source=c65] 行标题: 部门11 | 列标题: 上半年 > 上5月 | 数值: 部11上111 [R22C6 source=c65] 行标题: 部门11 | 列标题: 上半年 > 上6月 | 数值: 部11上111 [R22C7 source=c66] 行标题: 部门11 | 列标题: 下半年 > 下1月 | 数值: 部11下112 [R22C8 source=c66] 行标题: 部门11 | 列标题: 下半年 > 下2月 | 数值: 部11下112 [R22C9 source=c66] 行标题: 部门11 | 列标题: 下半年 > 下3月 | 数值: 部11下112 [R22C10 source=c66] 行标题: 部门11 | 列标题: 下半年 > 下4月 | 数值: 部11下112 [R22C11 source=c66] 行标题: 部门11 | 列标题: 下半年 > 下5月 | 数值: 部11下112 [R23C1 source=c67] 行标题: 部门11 | 列标题: 上半年 > 上1月 | 数值: 部11上113 [R23C2 source=c67] 行标题: 部门11 | 列标题: 上半年 > 上2月 | 数值: 部11上113 [R23C3 source=c67] 行标题: 部门11 | 列标题: 上半年 > 上3月 | 数值: 部11上113 [R23C4 source=c67] 行标题: 部门11 | 列标题: 上半年 > 上4月 | 数值: 部11上113 [R23C5 source=c67] 行标题: 部门11 | 列标题: 上半年 > 上5月 | 数值: 部11上113 [R23C6 source=c67] 行标题: 部门11 | 列标题: 上半年 > 上6月 | 数值: 部11上113 [R23C7 source=c68] 行标题: 部门11 | 列标题: 下半年 > 下1月 | 数值: 部11下114 [R23C8 source=c68] 行标题: 部门11 | 列标题: 下半年 > 下2月 | 数值: 部11下114 [R23C9 source=c68] 行标题: 部门11 | 列标题: 下半年 > 下3月 | 数值: 部11下114 [R23C10 source=c68] 行标题: 部门11 | 列标题: 下半年 > 下4月 | 数值: 部11下114 [R23C11 source=c68] 行标题: 部门11 | 列标题: 下半年 > 下5月 | 数值: 部11下114 [R24C1 source=c70] 行标题: 部门12 | 列标题: 上半年 > 上1月 | 数值: 部12上121 [R24C2 source=c70] 行标题: 部门12 | 列标题: 上半年 > 上2月 | 数值: 部12上121 [R24C3 source=c70] 行标题: 部门12 | 列标题: 上半年 > 上3月 | 数值: 部12上121 [R24C4 source=c70] 行标题: 部门12 | 列标题: 上半年 > 上4月 | 数值: 部12上121 [R24C5 source=c70] 行标题: 部门12 | 列标题: 上半年 > 上5月 | 数值: 部12上121 [R24C6 source=c70] 行标题: 部门12 | 列标题: 上半年 > 上6月 | 数值: 部12上121 [R24C7 source=c71] 行标题: 部门12 | 列标题: 下半年 > 下1月 | 数值: 部12下122 [R24C8 source=c71] 行标题: 部门12 | 列标题: 下半年 > 下2月 | 数值: 部12下122 [R24C9 source=c71] 行标题: 部门12 | 列标题: 下半年 > 下3月 | 数值: 部12下122 [R24C10 source=c71] 行标题: 部门12 | 列标题: 下半年 > 下4月 | 数值: 部12下122 [R24C11 source=c71] 行标题: 部门12 | 列标题: 下半年 > 下5月 | 数值: 部12下122 [R25C1 source=c72] 行标题: 部门12 | 列标题: 上半年 > 上1月 | 数值: 部12上123 [R25C2 source=c72] 行标题: 部门12 | 列标题: 上半年 > 上2月 | 数值: 部12上123 [R25C3 source=c72] 行标题: 部门12 | 列标题: 上半年 > 上3月 | 数值: 部12上123 [R25C4 source=c72] 行标题: 部门12 | 列标题: 上半年 > 上4月 | 数值: 部12上123 [R25C5 source=c72] 行标题: 部门12 | 列标题: 上半年 > 上5月 | 数值: 部12上123 [R25C6 source=c72] 行标题: 部门12 | 列标题: 上半年 > 上6月 | 数值: 部12上123 [R25C7 source=c73] 行标题: 部门12 | 列标题: 下半年 > 下1月 | 数值: 部12下124 [R25C8 source=c73] 行标题: 部门12 | 列标题: 下半年 > 下2月 | 数值: 部12下124 [R25C9 source=c73] 行标题: 部门12 | 列标题: 下半年 > 下3月 | 数值: 部12下124 [R25C10 source=c73] 行标题: 部门12 | 列标题: 下半年 > 下4月 | 数值: 部12下124 [R25C11 source=c73] 行标题: 部门12 | 列标题: 下半年 > 下5月 | 数值: 部12下124 [R26C1 source=c75] 行标题: 部门13 | 列标题: 上半年 > 上1月 | 数值: 部13上131 [R26C2 source=c75] 行标题: 部门13 | 列标题: 上半年 > 上2月 | 数值: 部13上131 [R26C3 source=c75] 行标题: 部门13 | 列标题: 上半年 > 上3月 | 数值: 部13上131 [R26C4 source=c75] 行标题: 部门13 | 列标题: 上半年 > 上4月 | 数值: 部13上131 [R26C5 source=c75] 行标题: 部门13 | 列标题: 上半年 > 上5月 | 数值: 部13上131 [R26C6 source=c75] 行标题: 部门13 | 列标题: 上半年 > 上6月 | 数值: 部13上131 [R26C7 source=c76] 行标题: 部门13 | 列标题: 下半年 > 下1月 | 数值: 部13下132 [R26C8 source=c76] 行标题: 部门13 | 列标题: 下半年 > 下2月 | 数值: 部13下132 [R26C9 source=c76] 行标题: 部门13 | 列标题: 下半年 > 下3月 | 数值: 部13下132 [R26C10 source=c76] 行标题: 部门13 | 列标题: 下半年 > 下4月 | 数值: 部13下132 [R26C11 source=c76] 行标题: 部门13 | 列标题: 下半年 > 下5月 | 数值: 部13下132 [R27C1 source=c77] 行标题: 部门13 | 列标题: 上半年 > 上1月 | 数值: 部13上133 [R27C2 source=c77] 行标题: 部门13 | 列标题: 上半年 > 上2月 | 数值: 部13上133 [R27C3 source=c77] 行标题: 部门13 | 列标题: 上半年 > 上3月 | 数值: 部13上133 [R27C4 source=c77] 行标题: 部门13 | 列标题: 上半年 > 上4月 | 数值: 部13上133 [R27C5 source=c77] 行标题: 部门13 | 列标题: 上半年 > 上5月 | 数值: 部13上133 [R27C6 source=c77] 行标题: 部门13 | 列标题: 上半年 > 上6月 | 数值: 部13上133 [R27C7 source=c78] 行标题: 部门13 | 列标题: 下半年 > 下1月 | 数值: 部13下134 [R27C8 source=c78] 行标题: 部门13 | 列标题: 下半年 > 下2月 | 数值: 部13下134 [R27C9 source=c78] 行标题: 部门13 | 列标题: 下半年 > 下3月 | 数值: 部13下134 [R27C10 source=c78] 行标题: 部门13 | 列标题: 下半年 > 下4月 | 数值: 部13下134 [R27C11 source=c78] 行标题: 部门13 | 列标题: 下半年 > 下5月 | 数值: 部13下134 [R28C1 source=c80] 行标题: 部门14 | 列标题: 上半年 > 上1月 | 数值: 部14上141 [R28C2 source=c80] 行标题: 部门14 | 列标题: 上半年 > 上2月 | 数值: 部14上141 [R28C3 source=c80] 行标题: 部门14 | 列标题: 上半年 > 上3月 | 数值: 部14上141 [R28C4 source=c80] 行标题: 部门14 | 列标题: 上半年 > 上4月 | 数值: 部14上141 [R28C5 source=c80] 行标题: 部门14 | 列标题: 上半年 > 上5月 | 数值: 部14上141 [R28C6 source=c80] 行标题: 部门14 | 列标题: 上半年 > 上6月 | 数值: 部14上141 [R28C7 source=c81] 行标题: 部门14 | 列标题: 下半年 > 下1月 | 数值: 部14下142 [R28C8 source=c81] 行标题: 部门14 | 列标题: 下半年 > 下2月 | 数值: 部14下142 [R28C9 source=c81] 行标题: 部门14 | 列标题: 下半年 > 下3月 | 数值: 部14下142 [R28C10 source=c81] 行标题: 部门14 | 列标题: 下半年 > 下4月 | 数值: 部14下142 [R28C11 source=c81] 行标题: 部门14 | 列标题: 下半年 > 下5月 | 数值: 部14下142 [R29C1 source=c82] 行标题: 部门14 | 列标题: 上半年 > 上1月 | 数值: 部14上143 [R29C2 source=c82] 行标题: 部门14 | 列标题: 上半年 > 上2月 | 数值: 部14上143 [R29C3 source=c82] 行标题: 部门14 | 列标题: 上半年 > 上3月 | 数值: 部14上143 [R29C4 source=c82] 行标题: 部门14 | 列标题: 上半年 > 上4月 | 数值: 部14上143 [R29C5 source=c82] 行标题: 部门14 | 列标题: 上半年 > 上5月 | 数值: 部14上143 [R29C6 source=c82] 行标题: 部门14 | 列标题: 上半年 > 上6月 | 数值: 部14上143 [R29C7 source=c83] 行标题: 部门14 | 列标题: 下半年 > 下1月 | 数值: 部14下144 [R29C8 source=c83] 行标题: 部门14 | 列标题: 下半年 > 下2月 | 数值: 部14下144 [R29C9 source=c83] 行标题: 部门14 | 列标题: 下半年 > 下3月 | 数值: 部14下144 [R29C10 source=c83] 行标题: 部门14 | 列标题: 下半年 > 下4月 | 数值: 部14下144 [R29C11 source=c83] 行标题: 部门14 | 列标题: 下半年 > 下5月 | 数值: 部14下144 [R30C1 source=c85] 行标题: 部门15 | 列标题: 上半年 > 上1月 | 数值: 部15上151 [R30C2 source=c85] 行标题: 部门15 | 列标题: 上半年 > 上2月 | 数值: 部15上151 [R30C3 source=c85] 行标题: 部门15 | 列标题: 上半年 > 上3月 | 数值: 部15上151 [R30C4 source=c85] 行标题: 部门15 | 列标题: 上半年 > 上4月 | 数值: 部15上151 [R30C5 source=c85] 行标题: 部门15 | 列标题: 上半年 > 上5月 | 数值: 部15上151 [R30C6 source=c85] 行标题: 部门15 | 列标题: 上半年 > 上6月 | 数值: 部15上151 [R30C7 source=c86] 行标题: 部门15 | 列标题: 下半年 > 下1月 | 数值: 部15下152 [R30C8 source=c86] 行标题: 部门15 | 列标题: 下半年 > 下2月 | 数值: 部15下152 [R30C9 source=c86] 行标题: 部门15 | 列标题: 下半年 > 下3月 | 数值: 部15下152 [R30C10 source=c86] 行标题: 部门15 | 列标题: 下半年 > 下4月 | 数值: 部15下152 [R30C11 source=c86] 行标题: 部门15 | 列标题: 下半年 > 下5月 | 数值: 部15下152 [R31C1 source=c87] 行标题: 部门15 | 列标题: 上半年 > 上1月 | 数值: 部15上153 [R31C2 source=c87] 行标题: 部门15 | 列标题: 上半年 > 上2月 | 数值: 部15上153 [R31C3 source=c87] 行标题: 部门15 | 列标题: 上半年 > 上3月 | 数值: 部15上153 [R31C4 source=c87] 行标题: 部门15 | 列标题: 上半年 > 上4月 | 数值: 部15上153 [R31C5 source=c87] 行标题: 部门15 | 列标题: 上半年 > 上5月 | 数值: 部15上153 [R31C6 source=c87] 行标题: 部门15 | 列标题: 上半年 > 上6月 | 数值: 部15上153 [R31C7 source=c88] 行标题: 部门15 | 列标题: 下半年 > 下1月 | 数值: 部15下154 [R31C8 source=c88] 行标题: 部门15 | 列标题: 下半年 > 下2月 | 数值: 部15下154 [R31C9 source=c88] 行标题: 部门15 | 列标题: 下半年 > 下3月 | 数值: 部15下154 [R31C10 source=c88] 行标题: 部门15 | 列标题: 下半年 > 下4月 | 数值: 部15下154 [R31C11 source=c88] 行标题: 部门15 | 列标题: 下半年 > 下5月 | 数值: 部15下154"
+    - generic [ref=e917]:
+      - button "复制交接文本" [ref=e918] [cursor=pointer]
+      - button "下载 JSON" [ref=e919] [cursor=pointer]
+      - button "清空内存" [ref=e920] [cursor=pointer]
+    - paragraph [ref=e921]: 清空内存会删除源码、Markdown、比较结果与下载引用，不保留任何副本，不写 localStorage / IndexedDB。
+  - contentinfo [ref=e922]:
+    - paragraph [ref=e923]: TableFork 只证明支持的结构表示发生的信息损失，不证明 AI 阅读效果、数据真实性或 行业规范合规；未找到碰撞绝不等于“表格保真”。
+```
+
+# Test source
+
+```ts
+  1  | /**
+  2  |  * P029-T012 — 限定负载性能见证：32x12 合法表经 UI 的 analyze 路径跑 30 次。
+  3  |  *
+  4  |  * 表：tests/e2e/perf-table.ts 的固定表（32 行 x 12 列 = 384 格，89 DOM 格，
+  5  |  * 78 合并格），与 Node CLI 对照跑同一张表、同一 analyze() 内核。
+  6  |  *
+  7  |  * 计时方法（诚实口径，见 artifacts/logs/T012-e2e.txt §6）：
+  8  |  * 每次先点“清空内存”再重填同一张表，保证点击时旧结果已清除、状态栏
+  9  |  * 从隐藏变可见；t0/t1 为页内 performance.now()，夹在“点击比较按钮”
+  10 |  * 与“状态栏出现 CERTIFIED_COLLISION”之间。因此耗时含 Playwright 的
+  11 |  * 点击派发 + React 渲染 + analyze() 计算 + expect 轮询的开销，是
+  12 |  * UI 端到端耗时，不是纯内核耗时；纯内核对照见 T012-performance.json
+  13 |  * 的 cli 字段（同一张表，Node 内 analyze() 循环 30 次）。
+  14 |  * 分位数用 nearest-rank：p50 = 第 15 个顺序统计量，p95 = 第 29 个。
+  15 |  */
+  16 | import * as fs from 'node:fs';
+  17 | import { expect, test } from '@playwright/test';
+  18 | import { PERF_TABLE_HTML, PERF_TABLE_META } from './perf-table';
+  19 | 
+  20 | test.setTimeout(180_000);
+  21 | 
+  22 | function quantileNearestRank(sorted: number[], q: number): number {
+  23 |   const idx = Math.max(0, Math.ceil(q * sorted.length) - 1);
+  24 |   return sorted[idx] as number;
+  25 | }
+  26 | 
+  27 | test('performance: 32x12 table via UI analyze, 30 runs', async ({ page, browser }) => {
+  28 |   await page.goto('/');
+  29 |   // 预热 + 确认该表在 UI 路径下出 CERTIFIED_COLLISION（不计入 30 次）。
+  30 |   await page.locator('#tf-html').fill(PERF_TABLE_HTML);
+  31 |   await page.getByRole('button', { name: '比较并寻找反例' }).click();
+  32 |   await expect(page.locator('.tf-status').getByText('CERTIFIED_COLLISION').first()).toBeVisible();
+  33 | 
+  34 |   const durations: number[] = [];
+  35 |   for (let i = 0; i < 30; i++) {
+  36 |     await page.getByRole('button', { name: '清空内存' }).click();
+  37 |     await page.locator('#tf-html').fill(PERF_TABLE_HTML);
+  38 |     const t0 = await page.evaluate(() => performance.now());
+  39 |     await page.getByRole('button', { name: '比较并寻找反例' }).click();
+  40 |     await expect(page.locator('.tf-status').getByText('CERTIFIED_COLLISION').first()).toBeVisible();
+  41 |     const t1 = await page.evaluate(() => performance.now());
+  42 |     durations.push(+(t1 - t0).toFixed(1));
+  43 |   }
+  44 | 
+  45 |   const sorted = [...durations].sort((a, b) => a - b);
+  46 |   const stats = {
+  47 |     n: durations.length,
+  48 |     min: sorted[0],
+  49 |     p50: quantileNearestRank(sorted, 0.5),
+  50 |     p95: quantileNearestRank(sorted, 0.95),
+  51 |     max: sorted[sorted.length - 1],
+  52 |   };
+  53 |   const out = {
+  54 |     table: PERF_TABLE_META,
+  55 |     strategy: 'ORIGIN_EMPTY',
+  56 |     witness: 'CERTIFIED_COLLISION',
+  57 |     browser: `Chromium ${browser.version()}`,
+  58 |     path: 'UI analyze path: clear -> fill #tf-html -> click 比较并寻找反例 -> wait for CERTIFIED_COLLISION in .tf-status; t0/t1 = in-page performance.now()',
+  59 |     runs_ms: durations,
+  60 |     stats_ms: stats,
+  61 |     target_p95_ms: 500,
+  62 |     pass: stats.p95 <= 500,
+  63 |   };
+  64 |   fs.writeFileSync(
+  65 |     'artifacts/logs/T012-perf-browser.json',
+  66 |     `${JSON.stringify(out, null, 2)}\n`,
+  67 |     'utf8',
+  68 |   );
+> 69 |   expect(stats.p95).toBeLessThanOrEqual(500);
+     |                     ^ Error: expect(received).toBeLessThanOrEqual(expected)
+  70 | });
+  71 | 
+```

@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G21",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><th scope=\"row\" rowspan=\"2\"></th><td>a</td></tr><tr><td>b</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G21"
+}

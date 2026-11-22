@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G37",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td>a&nbsp;b</td><td>007</td></tr><tr><td>12345678901234567</td><td>1e5</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G37"
+}

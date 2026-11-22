@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G03",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>项目</th><th>值</th></tr></thead><tbody><tr><th scope=\"row\">甲</th><td>10</td></tr><tr><th scope=\"row\">乙</th><td>20</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G03"
+}

@@ -1,0 +1,17 @@
+{
+  "attempts": [
+    {
+      "clicked": true,
+      "ms": 108
+    },
+    {
+      "clicked": true,
+      "ms": 122
+    },
+    {
+      "clicked": true,
+      "ms": 201
+    }
+  ],
+  "note": "cancel button polled every 1ms inside the page during a 32x12 analyze; clicked=true means the 取消 button was observed and pressed before the job finished."
+}

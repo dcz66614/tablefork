@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G46",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><th scope=\"rowgroup\">G</th><td>v</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G46"
+}

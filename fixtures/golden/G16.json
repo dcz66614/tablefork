@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G16",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><td colspan=\"2\">非标题</td><th>标题</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G16"
+}

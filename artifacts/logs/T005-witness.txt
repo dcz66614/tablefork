@@ -1,0 +1,279 @@
+# P029-T005 witness evidence log
+# Generated: 2026-11-21T00:38Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 8ba2ce7 (P029-T004 handoff; product fc716b2).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T005 单格拆分与反事实碰撞证明 — src/core/witness.ts
+#        + temporary local tests (T005 TEMPORARY, to be taken over by T011).
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 0
+  - Test Files: 3 passed (3) — tests/core/t003-temp.test.ts (67 tests, unchanged),
+    tests/core/t004-temp.test.ts (19 tests, unchanged),
+    tests/core/t005-temp.test.ts (17 tests, new).
+  - Tests: 103 passed (103), 0 failed. Duration ~1.0–1.4s.
+  - NOTE: tests/property does not exist yet (T011 scope); vitest runs the
+    tests/core filter and exits 0. No property tests exist or are claimed.
+- Extra Node CLI call (P2-04 ruling, self-supplied temp script, NOT committed):
+  npx tsx /tmp/t005-cli-check.ts: exit 0 (full output in §5).
+- Evidence script (temp, NOT committed): npx tsx /tmp/t005-evidence.ts: exit 0
+  (full output in §6).
+- No external model API called; no Qoder; no password/key files touched.
+- git status at log time: only the new T005 files are untracked
+  (src/core/witness.ts, tests/core/t005-temp.test.ts, artifacts/logs/T005-witness.txt);
+  S0_REPORT.md and COORDINATOR_LOG.md remain untouched untracked coordinator files.
+
+## 2. Files produced by this task (only these)
+- src/core/witness.ts (new)
+- tests/core/t005-temp.test.ts (new; header-marked T005 TEMPORARY — to be taken over by T011)
+- artifacts/logs/T005-witness.txt (this file)
+- task_handoffs/P029-T005.json (second commit, see §9)
+NOT modified (per the card): src/core/types.ts, src/core/index.ts,
+src/core/parse.ts, src/core/grid.ts, src/core/headers.ts, src/core/flatten.ts,
+src/worker/protocol.ts, oracle/*, src/ui/*, src/main.tsx, package.json,
+package-lock.json, docs/, bundle/, drive-copies/, v1.0.0-archive/,
+S0_REPORT.md, COORDINATOR_LOG.md. src/core/index.ts was NOT modified
+(mounting left to T013 as instructed); the new module is imported directly
+by relative path in tests and in the /tmp scripts.
+
+## 3. SHA-256 of the produced source files (sha256sum, real output)
+- ddaf0c4b20eaccc1b7ae77a998e48663cc96eef07c2ef35494dd27c777f2b8f6  src/core/witness.ts
+- 03bab0626a5462d4e4ea23042632f46a8d4ec6126c2fb81ab590b408237caa32  tests/core/t005-temp.test.ts
+(Git result_commit SHA is recorded in task_handoffs/P029-T005.json, not here,
+to avoid self-reference: this log is part of the step-1 commit.)
+
+## 4. Implemented functions (public API of witness.ts)
+witness.ts imports only frozen contracts and T003/T004 modules
+(types from './index'; flattenGrid from './flatten'; buildGrid from './grid';
+buildHeaderPaths from './headers'; parseValidatedTable from './parse'):
+- findWitness(html: string, strategy: Strategy): WitnessResult — the main
+  entry. Parses A, enumerates merged cells sorted by (extra_slots asc,
+  origin row, origin col, cellId), builds each B with buildAlternativeHtml,
+  re-parses/re-grids B with T003, byte-compares F_p(A) vs F_p(B) (UTF-8,
+  J-T004-1 trailing-LF口径), compares canonical cell graphs, picks the
+  first header-changing success else the first structural success;
+  returns CERTIFIED_COLLISION + CollisionProof + CollisionKind, or
+  NO_WITNESS_FOUND + reason. Invalid input throws TableForkInputError
+  (J-T005-3), it is never reported as NO_WITNESS_FOUND.
+- canonicalCellGraph(grid: GridResult): string — canonical JSON (fixed key
+  order, no whitespace) { rows, cols, cells (all fields), slotOwner }
+  (J-T005-4).
+- sha256Utf8(text: string): string — SHA-256 hex over the UTF-8 bytes.
+- utf8BytesEqual(a, b: string): boolean — strict UTF-8 byte equality
+  (TextEncoder, not JS string ==).
+- splitCost(cell: Cell): number — extra_slots = rowSpan*colSpan - 1.
+- headerPathsChanged(gridA, gridB: GridResult): boolean — per-slot
+  rowHeaders/colHeaders text-array comparison via buildHeaderPaths
+  (J-T005-5); unknown titles (empty on both sides) do not count as changed.
+- collisionKindOf(headerAssociationChanged: boolean): CollisionKind —
+  HEADER_ASSOCIATION_CHANGED iff true, else STRUCTURAL_COLLISION.
+- buildAlternativeHtml(parsed, grid, source, strategy): string — rebuilds B:
+  same rows/cols/sections, every row keeps its <tr> (even a row with no
+  origin cells), source cell split into 1x1 pieces (origin copies text,
+  extensions blank under ORIGIN_EMPTY / same text under REPEAT_VALUE),
+  role/scope/section preserved (J-T005-2), other cells verbatim, cells
+  emitted left-to-right per row, caption preserved if present.
+All functions are pure (no random/time/env/IO); repeated findWitness calls
+return byte-identical proofs (see §8 determinism test).
+
+## 5. Extra Node CLI call (verbatim output, `npx tsx /tmp/t005-cli-check.ts`, exit 0)
+# The script re-parses each proof's alternativeHtml independently and
+# re-flattens/re-hashes; nothing below is taken on trust from findWitness.
+--- strategy=ORIGIN_EMPTY ---
+status=CERTIFIED_COLLISION kind=HEADER_ASSOCIATION_CHANGED
+sourceCellId=c01 splitCost=1
+headerAssociationChanged=true
+aGraphSha256=dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+bGraphSha256=a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+markdownSha256=83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+recomputed aGraphSha256=dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d (match=true)
+recomputed bGraphSha256=a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5 (match=true)
+recomputed markdownSha256=83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1 (match=true)
+A graph != B graph (ORIGIN_EMPTY proof): true
+F(A)==F(B) under ORIGIN_EMPTY: true
+--- strategy=REPEAT_VALUE ---
+status=CERTIFIED_COLLISION kind=HEADER_ASSOCIATION_CHANGED
+sourceCellId=c00 splitCost=1
+headerAssociationChanged=true
+aGraphSha256=dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+bGraphSha256=ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1
+markdownSha256=e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb
+recomputed aGraphSha256=dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d (match=true)
+recomputed bGraphSha256=ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1 (match=true)
+recomputed markdownSha256=e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb (match=true)
+A graph != B graph (REPEAT_VALUE proof): true
+F(A)==F(B) under REPEAT_VALUE: true
+=== required truth values (§6.3 example) ===
+A graph != B graph: true
+F(A)==F(B) under ORIGIN_EMPTY: true
+F(A)==F(B) under REPEAT_VALUE: true
+NOTE: the two strategies certify with DIFFERENT B tables (J-T005-1) and,
+for §6.3, different source cells (J-T005-7): ORIGIN_EMPTY picks the colspan
+cell c01 (the book's B, second th empty); REPEAT_VALUE picks the rowspan cell
+c00 (repeated '产品' text duplicates the col0 header path). Both are
+HEADER_ASSOCIATION_CHANGED. The markdownSha256 values match T004's
+independently recorded §6.3 hashes exactly (E1 83da5104…, E2 e97edc1b…).
+
+## 6. Evidence: TFK-A / TFK-B A/B HTML + independent re-verification
+# Verbatim output of `npx tsx /tmp/t005-evidence.ts` (exit 0). Every
+# "independent:" line re-parses alternativeHtml, rebuilds both grids,
+# re-flattens and re-hashes from scratch.
+--- TFK-A (§6.3) strategy=ORIGIN_EMPTY ---
+A HTML: <table><thead><tr><th rowspan="2">产品</th><th colspan="2">2026预算</th></tr><tr><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+status=CERTIFIED_COLLISION kind=HEADER_ASSOCIATION_CHANGED candidatesTried=2 candidatesCertified=2
+B HTML: <table><thead><tr><th rowspan="2">产品</th><th>2026预算</th><th></th></tr><tr><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+sourceCellId=c01 splitCost=1 headerAssociationChanged=true
+aGraphSha256=dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+bGraphSha256=a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+markdownSha256=83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+F(A)="| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n"
+F(B)="| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n"
+independent: graphDifferent=true aHashMatch=true bHashMatch=true fByteEqual=true mdHashMatch=true
+--- TFK-A (§6.3) strategy=REPEAT_VALUE ---
+A HTML: <table><thead><tr><th rowspan="2">产品</th><th colspan="2">2026预算</th></tr><tr><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+status=CERTIFIED_COLLISION kind=HEADER_ASSOCIATION_CHANGED candidatesTried=2 candidatesCertified=2
+B HTML: <table><thead><tr><th>产品</th><th colspan="2">2026预算</th></tr><tr><th>产品</th><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+sourceCellId=c00 splitCost=1 headerAssociationChanged=true
+aGraphSha256=dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+bGraphSha256=ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1
+markdownSha256=e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb
+F(A)="| 产品 | 2026预算 | 2026预算 |\n| --- | --- | --- |\n| 产品 | 收入 | 成本 |\n| A | 120 | 80 |\n"
+F(B)="| 产品 | 2026预算 | 2026预算 |\n| --- | --- | --- |\n| 产品 | 收入 | 成本 |\n| A | 120 | 80 |\n"
+independent: graphDifferent=true aHashMatch=true bHashMatch=true fByteEqual=true mdHashMatch=true
+--- TFK-B (rowspan row header) strategy=ORIGIN_EMPTY ---
+A HTML: <table><thead><tr><th>项目</th><th>数值</th></tr></thead><tbody><tr><th scope="row" rowspan="2">部门X</th><td>a</td></tr><tr><td>b</td></tr></tbody></table>
+status=CERTIFIED_COLLISION kind=HEADER_ASSOCIATION_CHANGED candidatesTried=1 candidatesCertified=1
+B HTML: <table><thead><tr><th>项目</th><th>数值</th></tr></thead><tbody><tr><th scope="row">部门X</th><td>a</td></tr><tr><th scope="row"></th><td>b</td></tr></tbody></table>
+sourceCellId=c02 splitCost=1 headerAssociationChanged=true
+aGraphSha256=7671d3ba03777d42cd9725e51efe56dbc4a1687b0304652e83b05e19a2cea5b2
+bGraphSha256=693b1db02dcf0b346d846ff45201f15d1cfd9d6de048574bfc3039b30a9a7bab
+markdownSha256=07ee8352fedbc05625768076052d046569d23e3350b82b8196e038d2711c1961
+F(A)="| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n|  | b |\n"
+F(B)="| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n|  | b |\n"
+independent: graphDifferent=true aHashMatch=true bHashMatch=true fByteEqual=true mdHashMatch=true
+--- TFK-B (rowspan row header) strategy=REPEAT_VALUE ---
+A HTML: <table><thead><tr><th>项目</th><th>数值</th></tr></thead><tbody><tr><th scope="row" rowspan="2">部门X</th><td>a</td></tr><tr><td>b</td></tr></tbody></table>
+status=CERTIFIED_COLLISION kind=STRUCTURAL_COLLISION candidatesTried=1 candidatesCertified=1
+B HTML: <table><thead><tr><th>项目</th><th>数值</th></tr></thead><tbody><tr><th scope="row">部门X</th><td>a</td></tr><tr><th scope="row">部门X</th><td>b</td></tr></tbody></table>
+sourceCellId=c02 splitCost=1 headerAssociationChanged=false
+aGraphSha256=7671d3ba03777d42cd9725e51efe56dbc4a1687b0304652e83b05e19a2cea5b2
+bGraphSha256=7d0f501a5d9ea389f4ab82f2b1e098373577bf5ee194ac010b47dad2bc1c5ad7
+markdownSha256=443b6ef12b13de27fec16fe757f250c40d49afb2aa0315466986e270f94c4d61
+F(A)="| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n| 部门X | b |\n"
+F(B)="| 项目 | 数值 |\n| --- | --- |\n| 部门X | a |\n| 部门X | b |\n"
+independent: graphDifferent=true aHashMatch=true bHashMatch=true fByteEqual=true mdHashMatch=true
+NOTE: TFK-B's markdownSha256 values match T004's independently recorded
+rowspan hashes exactly (E5 07ee8352…, E6 443b6ef1…).
+--- TFK-C-like flat (no merge) strategy=ORIGIN_EMPTY ---
+A HTML: <table><tbody><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></tbody></table>
+status=NO_WITNESS_FOUND kind=(none) candidatesTried=0 candidatesCertified=0
+reason=no merged cells in the table (all cells are 1x1); no single-split candidate exists
+--- TFK-C-like flat (no merge) strategy=REPEAT_VALUE ---
+A HTML: <table><tbody><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></tbody></table>
+status=NO_WITNESS_FOUND kind=(none) candidatesTried=0 candidatesCertified=0
+reason=no merged cells in the table (all cells are 1x1); no single-split candidate exists
+NOTE: NO_WITNESS_FOUND is reported as "not proven", never as "proven safe"
+or "no ambiguity" — the reason string says only that no candidate exists.
+
+## 7. Hash semantics (what each SHA-256 is computed over)
+- aGraphSha256: SHA-256 (hex) of the UTF-8 bytes of canonicalCellGraph(gridA),
+  the canonical JSON { rows, cols, cells (all fields), slotOwner } (J-T005-4).
+- bGraphSha256: same computation over canonicalCellGraph(gridB), where gridB
+  is rebuilt by independently re-parsing alternativeHtml with T003
+  parseValidatedTable + buildGrid (not copied from any internal state).
+- markdownSha256: SHA-256 of the UTF-8 bytes of F_strategy(A) (flatten output
+  string, trailing LF per J-T004-1); when certified, F_strategy(B) has
+  byte-identical UTF-8 bytes (checked with utf8BytesEqual before certifying),
+  so the same hash identifies both Markdown texts.
+- Cross-check: §6.3 markdownSha256 values equal T004's E1/E2 hashes and
+  TFK-B's equal T004's E5/E6 hashes (see §5/§6 notes) — three independent
+  computations (T004 log, T005 CLI, T005 evidence script) agree.
+
+## 8. Test coverage (tests/core/t005-temp.test.ts, 17 tests, 17 passed)
+- §6.3 / TFK-A (3 tests): ORIGIN_EMPTY selects colspan c01 + header changed
+  + book's B verbatim (empty second th, rowspan th untouched); REPEAT_VALUE
+  certifies but selects rowspan c00 (J-T005-7); the two strategies build
+  different B tables (J-T005-1). Each case independently re-verifies the
+  proof (re-parse B, re-flatten, re-hash, re-check splitCost/header flag).
+- TFK-B (2 tests): ORIGIN_EMPTY certifies with header changed (continuation
+  row loses its row header); REPEAT_VALUE certifies as STRUCTURAL_COLLISION
+  only (repeated text restores the same row path, J-T005-2).
+- No-witness (2 tests): flat table → NO_WITNESS_FOUND under both strategies
+  with reason "no merged cells" (never labelled safe); merged empty-text
+  cell certifies under both strategies with the SAME B (the one case where
+  a single B collides under both strategies).
+- Selection order (3 tests): header-changing candidate beats a cheaper
+  structural-only one (cost 2 vs 1); within header-changing candidates the
+  smaller extra_slots wins (cost 1 vs 2); on a cost tie the smaller origin
+  column wins.
+- B illegal / skip (2 tests): 128 DOM cells + a merge → every split B has
+  129 cells and is rejected OVER_SIZE, so NO_WITNESS_FOUND with
+  candidatesTried=4, candidatesCertified=0 (J-T005-6); buildAlternativeHtml
+  spot check (re-parses to the intended grid, +1 cell, colspan now 1).
+- Hash stability (4 tests): sha256Utf8 known vectors ('' and 'abc');
+  repeated findWitness calls byte-identical; canonicalCellGraph
+  deterministic; utf8BytesEqual byte-exact (trailing LF matters, J-T004-1).
+- Invalid input (1 test): nested table throws TableForkInputError with code
+  UNSUPPORTED_NESTED_TABLE (J-T005-3) instead of NO_WITNESS_FOUND.
+NOT covered here (T011 scope): the 48 Golden fixtures, 200-seed property
+tests, Oracle cross-check, compare/records/report behaviour.
+This file must not be quoted as "tests complete".
+
+## 9. Documented judgement calls (spec does not pin these down; see witness.ts header)
+J-T005-1. Split is per-strategy (§5.2: extensions blank under ORIGIN_EMPTY,
+    same text under REPEAT_VALUE). One B generally cannot collide under both
+    strategies (unless the source text is empty). findWitness(html, strategy)
+    certifies one strategy at a time; "both strategies collide" means two
+    calls, two (usually different) B tables.
+J-T005-2. Split pieces keep the source cell's role/scope/section; only the
+    span becomes 1x1 and the text follows the strategy (§5.2 "保留原点所属
+    rowgroup"). Consequence: under REPEAT_VALUE the repeated text restores
+    the same declared header path, so TFK-B (and §6.3's colspan cell) certify
+    as STRUCTURAL_COLLISION only under REPEAT_VALUE.
+J-T005-3. Invalid/unsupported input throws TableForkInputError (same as
+    parse/grid); NO_WITNESS_FOUND is only for valid input with no certifying
+    candidate. The 'UNSUPPORTED' witness status is for the T008 report layer
+    to map the thrown error to; this module does not swallow errors.
+J-T005-4. Canonical cell graph = JSON (fixed key order, no whitespace)
+    { rows, cols, cells (all fields incl. text), slotOwner }; text is part
+    of structural identity (slot-to-cell ownership + text distribution).
+J-T005-5. Header change = per-slot rowHeaders/colHeaders text-array
+    comparison via frozen buildHeaderPaths; unknown titles (empty on both
+    sides) never count as a change.
+J-T005-6. B illegal is real: a legal A at the 128-cell cap yields 129-cell B
+    tables rejected OVER_SIZE; such candidates are skipped, and if all fail
+    the result is NO_WITNESS_FOUND with the rejection reasons recorded.
+J-T005-7. §6.3 under REPEAT_VALUE selects the rowspan cell c00, not the
+    colspan cell: the repeated '产品' text makes the col0 path
+    ['产品','产品'] (§3.3 dedups by cellId only, not by text), so the rowspan
+    split is header-changing too and precedes the colspan cell in
+    (cost, row, col, id) order; the colspan split under REPEAT_VALUE is
+    structural-only. ORIGIN_EMPTY still selects the colspan cell c01, exactly
+    as the project book §6.3 says. This follows from frozen headers.ts plus
+    the frozen selection order; it is not implementer discretion.
+
+## 10. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): src/core/witness.ts + tests/core/t005-temp.test.ts
+  + this log file.
+- Step 2 (handoff commit): task_handoffs/P029-T005.json only.
+- Real SHAs are recorded in task_handoffs/P029-T005.json (result_commit =
+  step-1 SHA) and in the final report.
+
+## 11. Open issues (non-blocking; no rollback was needed)
+- J-T005-7 is the one judgement call most likely to surprise a reviewer:
+  §6.3's REPEAT_VALUE proof selects the rowspan cell, not the colspan cell.
+  Recommend T011 / final review confirm the reading (frozen headers.ts
+  dedups header paths by cellId, so repeated identical header text counts as
+  a path change). Changing it would require changing either headers.ts
+  (frozen, T003) or the header-change comparison — neither is this card's
+  scope; the current behaviour is documented, tested, and honest.
+- WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).
+- No performance measurement was made in this card (p95 <=500ms on 32x12 is
+  a T012 gate); witness work is one parse+grid per candidate (at most 128
+  merged cells in the worst case, each over a ≤64 KiB input), but no timing
+  claim is made here.
+- No contract conflict was found: T002's frozen types were sufficient
+  (CollisionProof + CollisionKind + WitnessStatus cover everything this card
+  needs); no baseline restore, no hard-coded answers (every certificate is
+  computed by enumeration + re-verification; the 128-cell test only sets up
+  an input, the skip is computed).

@@ -1,0 +1,181 @@
+# P029-T011-FIX-01 证据日志 — 修 Oracle 侧的两处分歧，重跑 T011 对照
+# 任务卡：P029-T011-FIX-01（执行者 Muse，2026-11-21）
+# 基线：HEAD 22e55b8（T011 交接，result FAIL）；规格 v1.0.1
+# 结论：PASS——两处分歧均按协调裁决修复，四条验收命令全部退出 0。
+
+## 1. 两项裁决与理由（裁决者 Muse，2026-11-21；依据 Sam 2026-11-18 授权：
+##    这类规格决策 Muse 按自己推荐定）
+
+### 裁决 (A)：facts 定 TD-only——TS 对、Oracle 错
+- 规格原文（docs/PROJECT_BOOK.md v1.0.1 §5.4）：“对每个 td 占用的槽位，
+  稳定序列化：[R2C1 source=c05] 行标题: ? | 列标题: 2026预算 > 收入 |
+  数值: 120”。
+- 理由：交接稿由 facts 生成，facts 含 th 槽会让交接稿出现标题格行，
+  与 §5.4 矛盾；Oracle 自身的 handover_lines 已是 TD 过滤
+  （只取 role == "TD" 的槽），其 facts 与 handover 内部不一致。
+- TS 佐证：src/core/records.ts buildSlotFacts 只对 role 为 TD 的槽出
+  记录（“th 槽位不出事实行（th 是标题本身，不是数据值）”）。
+
+### 裁决 (B)：未知属性忽略——TS 对、Oracle 错
+- 规格原文（docs/PROJECT_BOOK.md v1.0.1 §3.1）：“有效标签”只限标签
+  （table/thead/tbody/tr/th/td/caption）；“标题规则”中只有
+  scope=rowgroup/colgroup 和 headers 属性显式报
+  UNSUPPORTED_HEADER_SEMANTICS；“格式处理”明说“规范规定这会丢格式，
+  不声称逐字保留 HTML 源码”。
+- 理由：§3.1 未给属性设限；有语义的属性只有
+  rowspan/colspan/scope/headers；T003 的 J1 管的是超集元素，Oracle
+  把它扩展到属性是自己的选择（见 artifacts/logs/T006-oracle.txt §4
+  O1 原文）；拒 class/style/data-* 会让工具拒掉几乎所有真实粘贴表，
+  与工具用途相悖；属性不渲染，无安全角度。
+
+## 2. 改动清单（只做这两件事，未扩大范围）
+
+### oracle/reference.py（唯一改动的源码）
+1. build_facts 改为 TD-only：循环内加 `if cell["role"] != "TD": continue`
+   （与 handover_lines 已用的同一 TD 过滤一致；th 槽不再出 facts）。
+2. 删 _check_cell_attrs 的未知属性拒绝循环（`attribute %s on <%s> is
+   outside the subset`）及 _CELL_ATTRS 常量；删 table / thead / tbody /
+   caption / tr 五处表级属性拒绝（`attributes on <...> are outside the
+   subset`），改为忽略未知属性的注释。
+3. 文件头 docstring 的 O1 条更新为新口径（原“未知属性 ->
+   INVALID_RAGGED_GRID”作废，指向 T006 日志末尾的勘误附录）。
+4. 保留未动：rowspan/colspan 解析与 1–8 校验（INVALID_SPAN）、scope
+   取值校验（row/col 合格；rowgroup/colgroup/非法值报
+   UNSUPPORTED_HEADER_SEMANTICS）、headers 属性报
+   UNSUPPORTED_HEADER_SEMANTICS；其他解析/网格/标题/F/见证逻辑一字未动。
+   注：一次编辑曾误删 _ALLOWED_TAGS 定义一行，当场发现并恢复；
+   恢复后 grep 确认定义存在，语法检查通过（见 §6）。
+
+### oracle/golden_expected.json（只改 facts 数组）
+- 删各条 facts 数组里的 th 槽条目：共删 99 条，涉及 24 条 fixtures
+  （G02:2、G03:4、G04:2、G06:2、G07:2、G08:3、G09:6、G10:6、G12:3、
+  G14:10、G16:1、G17:4、G19:4、G20:2、G21:2、G22:3、G24:5、G25:6、
+  G26:6、G29:6、G30:6、G31:8、G39:2、G40:4）；其余 24 条 fixtures
+  （含 8 条错误案）facts 本来就不含 th 槽，未动。
+- 其余字段一字不动：handover 本来就是 TD-only，未动；cells /
+  slotOwner / F / witness / input 全未动。验证办法：/tmp 脚本
+  （/tmp/t011fix01-fix-golden.py，不提交）先对原文件做深拷贝，改后
+  以 facts 置空方式逐字段深比较，断言除 facts 外完全相等；同时断言
+  每条改后 facts 长度 == handover 行数、每条保留的 fact 均指向 TD 格。
+- 指纹字段无需重填，做法与验证：a_graph_sha256 / b_graph_sha256 /
+  markdown_sha256 的输入分别是 cells+slotOwner、B 图（b_cells +
+  b_slotOwner）、F 字符串，均不含 facts。按 T006 §2 的办法
+  （key order id,row,col,rowSpan,colSpan,role,scope,text,section；
+  compact separators；ensure_ascii=False）用独立 /tmp 脚本重算全部
+  212 个哈希字段（160 个 a 图/F 哈希 + 52 个 B 图哈希），改前改后
+  均为 0 不匹配。故无任何指纹值被改写——不是漏填，是经核验确认
+  facts 不在任何指纹输入里。/tmp/t006-fill-hashes.py 原脚本已不在
+  /tmp（T006 未提交），本次重算脚本为新写的等价实现
+  （/tmp/t011fix01-check-hashes.py、/tmp/t011fix01-check-bhash.py）。
+- 格式：重 dump 用 indent=1 + ensure_ascii=False，与原文件一致；
+  补回原文件末尾换行；git diff 经核对只有 facts 删除行
+  （diff 统计 72 增 / 1226 删，其中“增”行是 git 在大段删除处的
+  对齐产物，经逐 fixture 键序比对与上述深比较确认无语义改动；
+  原文件无重复键，键序逐 fixture 保持不变）。
+
+### artifacts/logs/T006-oracle.txt（只追加）
+- 末尾追加 §12 勘误附录（2026-11-21，dated），写明裁决 (A)(B)、
+  改了什么、为什么；已有内容一字未改（§4 O1 原文保留，附录注明作废）。
+
+### tests/core/t011fix01-temp.test.ts（新增回归测试）
+- 头注 `T011-FIX-01 TEMPORARY — to be taken over by T013`，待 T013
+  接管为正式测试。5 个断言：G02 facts 为 2 条且均为 td（c02、c03）；
+  `<td data-x>`、`<table class>`、`<td style>` 三例 analyze() 均接受；
+  headers 属性仍报 UNSUPPORTED_HEADER_SEMANTICS。
+
+### 未动（按任务卡禁止清单）
+- 未改 TS 核心（src/core/*）、UI、fixtures/golden/*、docs/、bundle/、
+  package*、S0_REPORT.md、COORDINATOR_LOG.md、T011 的 T011-tests.txt。
+
+## 3. 改前改后对照（全部来自真实运行）
+
+### (A) G02 facts：4 → 2
+- 改前（原 golden_expected.json）：G02 facts 4 条 [c00, c01, c02, c03]
+  （c00、c01 为 th 槽）。
+- 改后（新 golden_expected.json）：G02 facts 2 条 [c02, c03]。
+- 改后 Oracle 实算（analyse(G02 input)）：facts 2 条 [c02, c03]，
+  handover 2 行，facts 行数 == handover 行数（内部一致性恢复）。
+
+### (B) O1 三例：由拒变接受（两侧对照，§5 贴出原始输出）
+- `<td data-x>`、`<table class>`、`<td style>`：改前 Oracle 报
+  INVALID_RAGGED_GRID（协调员已复现，见任务卡）；改后 TS 与 Oracle
+  两侧均 OK（见 §5）。
+- headers 属性：改后两侧仍同码拒绝 UNSUPPORTED_HEADER_SEMANTICS
+  （见 §5）。
+
+### 测试套件：205 失败 → 0 失败
+- 改前 `npm run test:core`：205 failed / 509 passed（共 714），退出 1
+  （2026-11-21 03:44 GMT 实测，与 T011 交接一致）。
+- 改后 `npm run test:core`：719 passed（共 719），退出 0。总数 719
+  = 原 714 + 本卡新增回归测试 5 个；205 个原失败全部归零，无新增失败。
+  （任务卡写“714/714”是指原 714；含新增测试的实际总数为 719/719。）
+
+## 4. 验收命令（全部真实运行，退出码如实记录）
+
+| # | 命令 | 退出码 | 结果 |
+|---|------|--------|------|
+| 1 | npm run typecheck | 0 | 通过（tsc --noEmit 无输出） |
+| 2 | npm run oracle | 0 | 48/48 passed（0 failed） |
+| 3 | npm run test:core | 0 | 719 passed（10 个文件，0 失败） |
+| 4 | npm test | 0 | 719 passed（10 个文件，0 失败；与 test:core 同总数，因本仓库 vitest 只含 tests/core + tests/property） |
+
+- 改前基线（同日同会话实测）：`npm run oracle` 48/48 退出 0；
+  `npm run test:core` 205 failed / 509 passed 退出 1。
+- 改后 `npm run oracle` 在 reference.py 与 golden_expected.json 两处改动
+  全部完成后跑：48/48 退出 0。
+- 未运行：无。没有 NOT_RUN 项。未调用任何外部模型 API，未用 Qoder，
+  未碰任何密码/密钥文件。
+
+## 5. O1 两侧对照原始输出（/tmp 脚本，TS analyze() + Oracle analyse()）
+
+脚本：/tmp/t011fix01-o1-ts.mts（npx tsx 运行，import
+src/core/report.ts 的 analyze）与 /tmp/t011fix01-o1-py.py（import
+oracle/reference.py 的 analyse）。输入与 T011 任务卡一致。
+
+TS 侧：
+```
+TS OK   | td data-x | rows=undefined cols=undefined facts=2 witness=NO_WITNESS_FOUND
+TS OK   | table class | rows=undefined cols=undefined facts=2 witness=NO_WITNESS_FOUND
+TS OK   | td style | rows=undefined cols=undefined facts=2 witness=NO_WITNESS_FOUND
+TS ERR  | headers attr (must still reject) | code=UNSUPPORTED_HEADER_SEMANTICS message=<td> uses a headers attribute (offset 18); explicit headers references are not supported
+```
+（注：AnalyzeResult 不带 rows/cols 字段，故为 undefined；facts=2
+为接受的有效证据。）
+
+Oracle 侧：
+```
+PY OK   | td data-x | rows=1 cols=2 facts=2 witness_O=NO_WITNESS_FOUND
+PY OK   | table class | rows=1 cols=2 facts=2 witness_O=NO_WITNESS_FOUND
+PY OK   | td style | rows=1 cols=2 facts=2 witness_O=NO_WITNESS_FOUND
+PY ERR  | headers attr (must still reject) | code=UNSUPPORTED_HEADER_SEMANTICS message=headers attribute is explicitly unsupported (spec 3.1)
+```
+
+结论：三例两侧均接受（各出 facts 2 条）；headers 两侧同码拒绝。
+
+## 6. 命令记录（本卡实测时间线，UTC 2026-11-21）
+
+- 03:44 git status：工作树干净（仅 S0_REPORT.md、COORDINATOR_LOG.md
+  未跟踪，未碰）；HEAD 22e55b8。
+- 03:44 npm run oracle（改前）：48/48 passed，退出 0。
+- 03:44 npm run test:core（改前）：205 failed / 509 passed（714），退出 1。
+- 03:45 指纹重算（改前）：160 个 a 图/F 哈希 0 不匹配；52 个 B 图
+  哈希 0 不匹配——证实 facts 不在任何指纹输入里。
+- 03:46 oracle/reference.py 改完：python3 ast 语法检查 OK；grep 确认
+  无剩余属性拒绝（仅剩元素级 "outside the subset"：markup 声明、
+  处理指令、超集 end tag，均属 J1 元素口径，应保留）。
+- 03:46 golden_expected.json 改完：删 th facts 99 条；指纹重算改后
+  仍 0 不匹配（160 + 52）。
+- 03:46 npm run oracle（改后）：48/48 passed，退出 0。
+- 03:47 npm run typecheck（改后）：退出 0。
+- 03:47 npm run test:core（改后）：719 passed，退出 0。
+- 03:47 npm test（改后）：719 passed，退出 0。
+- 03:48 G02 实算核对：改后 golden G02 facts 2 条 [c02, c03]；
+  Oracle 实算 facts 2 条 [c02, c03]，handover 2 行。
+
+## 7. 未解决问题
+
+- 无本卡遗留问题。两处分歧均已修复并由四条验收命令覆盖。
+- 待 T013 接管 tests/core/t011fix01-temp.test.ts 为正式测试
+  （本文件头注已注明）。
+- 提醒（非本卡问题）：T011 交接的 ISSUE-T011-3 已闭环；O6
+  （alternativeHtml 序列化口径）未动，仍按结构比对。

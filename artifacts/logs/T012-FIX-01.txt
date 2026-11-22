@@ -1,0 +1,109 @@
+P029-T012-FIX-01 — 性能测量改为隔离串行运行（测法修复）
+=============================================================
+任务：P029-T012-FIX-01（修复卡）｜ 规格 v1.0.1 ｜ 基线 8a804a2（T012 交接，result FAIL）
+执行时间：2026-11-21 ~04:08–04:12 UTC ｜ 执行者：subagent（全新会话）
+结果：PASS —— 隔离串行测量 p95 257.5ms ≤ 500ms；五条验收命令全部 exit 0。
+
+§1 测法问题的原因（为什么全套超标不是产品问题）
+--------------------------------------------------
+T012 的全套 `npm run test:e2e` 用 2 个并行 Playwright worker 跑 21 条测试：
+性能测试与另一 Chromium worker 在 1.5 共享 vCPU 上互争 CPU。原始数据
+（T012-performance.json 五组数据集，见 §4）直接证明这一点：
+
+- 全套 run A：p95 527.4ms（>500），但第 26–30 次耗时 144.9 / 203.2 /
+  189.8 / 231.7 / 268.7ms —— 全部回落到独立运行区间；
+- 全套 run B：p95 649.2ms（>500），但第 26–30 次耗时 210.4 / 166.5 /
+  163.5 / 175.2 / 183.1ms —— 同样回落到独立运行区间；
+- 两轮全套恰好都在后 5 次回落，对应另一 worker 跑完、CPU 争用消失。
+  若产品本身慢，后 5 次不会系统性地回到独立区间。
+- 独立运行 p95 263.2 / 282.8ms、Node 内核 p95 109.7ms，均以约 2 倍
+  余量达标。测到的不是产品本身的速度，而是测试框架自身的并行争用。
+
+结论：测量方法缺陷，不是产品缺陷。不动产品、不动阈值、不动表，
+只把性能测量改为隔离串行运行。
+
+§2 改动清单（只改两个文件）
+----------------------------
+1. playwright.config.ts：新增 projects 数组
+     projects: [
+       { name: 'functional', testMatch: '**/tablefork.e2e.ts' },
+       { name: 'perf',       testMatch: '**/performance.e2e.ts' },
+     ]
+   其余配置一字未动（testDir、timeout、fullyParallel、webServer、
+   baseURL、trace/screenshot 策略均不变）。注释中写明拆分原因与证据。
+2. package.json（仅 scripts）：
+     "test:e2e":      "playwright test --project=functional"
+     "test:e2e:perf": "playwright test --project=perf"   （新增）
+   于是 `npm run test:e2e` 不再含性能测试，性能测试由独立命令跑，
+   二者永不同时执行。
+3. T012-performance.json：追加第六组数据集 ui_isolated_serial（§3），
+   verdict 按隔离测量结果重写为 PASS，但保留两轮全套超标的说明
+   （测量受污染，非产品问题）。五组旧数据与头部字段经程序核对与
+   HEAD 完全一致，未覆盖、未删除、未改动任何一个旧数值。
+4. 本日志 artifacts/logs/T012-FIX-01.txt（新增）。
+
+未动：src/*、Oracle、docs/、golden、tests/e2e/perf-table.ts、
+性能断言与 500ms 阈值、T012 的截图与 T012-e2e.txt、
+S0_REPORT.md、COORDINATOR_LOG.md、test-results/。
+未调用任何外部模型 API，未用 Qoder，未碰密码/密钥文件。
+
+§3 隔离串行运行的 30 个原始值（npm run test:e2e:perf，1 worker，1 test）
+-----------------------------------------------------------------------
+命令：npm run test:e2e:perf（playwright test --project=perf）
+时间：2026-11-21 ~04:10 UTC ｜ 退出码：0 ｜ 1 passed（16.8s）
+浏览器：Chromium 159.0.8154.6 ｜ 表：32×12（与 T012 同一张，
+sha256 2effed527a4e4c9d830cc7e4361bd5e5f1af007d6093ccf0c108f4438a9e5fdc）
+方法：与 T012 相同（clear -> fill #tf-html -> 点击比较并寻找反例 ->
+等待 CERTIFIED_COLLISION；t0/t1 = 页内 performance.now()；30 次；
+nearest-rank 分位数）。
+
+runs_ms（ms，顺序即运行顺序）：
+  233.2, 197.2, 188.4, 257.5, 167.5, 173.2, 192.5, 218.2, 192.9, 164.1,
+  197.9, 196.9, 193.1, 173.9, 213.4, 166.4, 162.6, 170.2, 206.6, 239.2,
+  167.3, 168.6, 184.8, 198.0, 200.8, 184.0, 188.8, 259.5, 220.7, 179.2
+
+统计：n=30，min=162.6，p50=192.5，p95=257.5，max=259.5（ms）
+断言：p95 257.5ms ≤ 500ms —— PASS，余量约 1.94 倍。
+与此前两轮独立运行一致（263.2 / 282.8ms），三轮隔离测量互相印证。
+
+§4 五组旧数据对照（全部保留在 T012-performance.json 中，未动）
+---------------------------------------------------------------
+  ui_full_suite_run_A：      p95 527.4ms，FAIL（并行污染）
+  ui_full_suite_run_B_final：p95 649.2ms，FAIL（并行污染）
+  ui_standalone_run_1：      p95 263.2ms，PASS
+  ui_standalone_run_2：      p95 282.8ms，PASS
+  cli_in_process：            p95 109.7ms，PASS
+  ui_isolated_serial（新增）：p95 257.5ms，PASS ← 本卡验收口径
+
+§5 验收命令与真实退出码（2026-11-21 ~04:09–04:11 UTC，全部 exit 0）
+-----------------------------------------------------------------------
+  1. npm run build          exit 0（tsc --noEmit + vite build，built in 1.77s）
+  2. npm run test:e2e        exit 0（functional project，20 passed，29.7s）
+  3. npm run test:e2e:perf   exit 0（perf project，1 passed，16.8s；p95 257.5ms）
+  4. npm run test            exit 0（719 passed / 719）
+  5. npm run typecheck       exit 0（tsc --noEmit，无输出）
+注：本日志 §5 的“四条验收命令”按任务书实为五条（build / test:e2e /
+test:e2e:perf / test / typecheck），五条均已跑并记录真实退出码。
+
+§6 注意事项（执行过程如实记录）
+----------------------------------
+- 开始前 git status 显示工作树并非完全干净：除任务书所述的未跟踪文件
+  （S0_REPORT.md、COORDINATOR_LOG.md、test-results/）外，
+  artifacts/logs/T012-perf-browser.json 与 T012-cancel-probe.json
+  相对 HEAD 已有未提交修改（协调员复现运行所致，本卡未动它们）。
+  性能测试与功能测试在运行时会覆盖这两个文件（性能测试写
+  T012-perf-browser.json，取消测试写 T012-cancel-probe.json），
+  因此本卡在验收前先备份了二者，跑完后原样恢复：恢复后 git diff
+  与运行前完全一致（T012-cancel-probe.json 6 行、T012-perf-browser.json
+  66 行），未把测试运行的覆盖值带入提交。隔离运行的 30 个原始值
+  已在写入前逐字转录进 T012-performance.json（§3），证据无丢失。
+- test-results/ 只有新增的本次运行 trace（未跟踪），按任务书留在磁盘、
+  不提交、不删除。
+
+§7 未解决问题（留待 T013）
+----------------------------
+- ISSUE-T012-2（P2，open）：取消按钮不可达——analyze() 全程同步，
+  ANALYZING 状态永不绘制；3 次 1ms 轮询探针均 observed clicked=false。
+  不在本卡范围，T013 接 Worker 线后重测。
+- ISSUE-T012-1（P2）：本卡关闭其测量方法根因——隔离串行 p95 257.5ms
+  通过；两轮全套超标数据保留作证，定性为测量污染而非产品问题。

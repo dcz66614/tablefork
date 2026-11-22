@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G41",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td><table><tr><td>内</td></tr></table></td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G41"
+}

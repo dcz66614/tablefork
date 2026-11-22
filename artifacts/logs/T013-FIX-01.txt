@@ -1,0 +1,148 @@
+# P029-T013-FIX-01 — 清单来源字段 + verify 易变文件排除：验收日志
+# 任务：P029-T013-FIX-01　规格 v1.0.1　基线 1bad435（T013 冻结发布提交）
+# 执行时间：2026-11-21 ~04:48–05:05 GMT　环境：Linux x64，Node v24.22.1，
+#   npm 10.9.4，Python 3.12.3，Chromium 159.0.8154.6，共享 VM（1.5 vCPU）
+# 本日志记录全部验收命令的真实退出码、新旧 ZIP 对比、清单核对与三步提交。
+# 只修协调员发现的两个 P2 记录/工具问题（ISSUE-T013-5/6），不碰任何产品代码
+# （src/、oracle/、tests/、fixtures/、cli/、docs/ 全部冻结）。
+
+## §1. 基线与三步提交
+# - base_commit（T013 冻结发布提交）：1bad4355ac961e32eada1cfda270bfd3f71a8b83
+# - commit A（修复提交）：c1af8736989418b863b9b762535dd9128b3a7b5e
+#   仅改 scripts/verify_release.mjs（29 增 1 删，见 §2）。
+# - commit B（打包提交）：清单 + 两 ZIP + REVIEW_PACK_05 + REVIEW_INDEX + 本日志；
+#   SHA 见 task_handoffs/P029-T013-FIX-01.json（result_commit）。
+# - commit C：仅 task_handoffs/P029-T013-FIX-01.json。
+# - 打包顺序（避免重蹈 T013 的 amend stale 字段问题）：先提交修复（A），
+#   再从 A 的 HEAD 重新生成清单/ZIP/pack/index（packaged_from_head = A），
+#   再提交产物（B），最后写交接（C）。无 amend。
+# - package-lock.json SHA-256 未变（80a86c95…7974f，与 T001 冻结值一致）；
+#   T012-performance.json 六组旧数据未改写（git diff 为空）。
+
+## §2. 两处修复（只改这两处）
+# (a) ISSUE-T013-5（CLOSED）：review/RELEASE_MANIFEST.json 的 packaged_from_head
+#     旧值是 amend 前提交 79410a500df2e284650ec40e285c64f69569ef65，
+#     而源码 ZIP 实际内容是冻结提交 1bad435 的树。重打后该字段为
+#     c1af8736989418b863b9b762535dd9128b3a7b5e（= commit A，ZIP 实际所打包的树），
+#     并在清单 notes 中写明定义：“packaged_from_head：源码 ZIP 所打包的树的
+#     提交（生成清单与 ZIP 时的 HEAD）”，另写明“冻结发布提交（result_commit）
+#     见 task_handoffs/P029-T013-FIX-01.json”。
+# (b) ISSUE-T013-6（CLOSED）：scripts/verify_release.mjs 新增 VOLATILE_RUN_OUTPUTS，
+#     把 artifacts/logs/T012-perf-browser.json 与
+#     artifacts/logs/T012-cancel-probe.json 排除出“清单哈希与工作树一致”
+#     这一项比对，并在常量注释与文件头 (c) 段写明理由：两个文件每次 e2e 运行
+#     都会被覆盖（功能项目重写 cancel-probe，隔离性能项目重写 perf-browser），
+#     工作树副本在任何一次 e2e 运行后都会与清单不一致，这不是发布包损坏；
+#     已提交版本仍是记录证据，清单/ZIP/HEAD 三方比对照常覆盖这两个文件，
+#     一字不放宽。检查的其他逻辑一字未动。修复后脚本 25963 字节（原 24320）、
+#     595 行（原 567）、SHA-256 e2118d4d2ab7…（原 429b33cb0c71…）。
+
+## §3. 打包生成器复现验证（打包前先证生成器与 T013 同口径）
+# - 生成器 /tmp/t013fix01/package.mjs（不在仓库内），复用
+#   scripts/verify_release.mjs 导出的 computeSourceSet / sha256File /
+#   deterministicZip / isCodeTextFile 同一口径。
+# - reproduce 模式（HEAD 434b919，暂存树，不碰仓库）：
+#   REVIEW_PACK_01–05 全部逐字节复现；dist ZIP 98684 B、
+#   SHA af8f43a9…逐字节复现；源码 ZIP 仅因索引的三行 stale 内容而差 36–47 字节；
+#   清单除 packaged_from_head / packaged_at_utc / notes / source_zip 外全同。
+# - 复现中发现 T013 索引的三处 stale（与 ISSUE-T013-5 同类，均在重打中修正）：
+#   (1) 索引头“生成时 HEAD”写 79410a5；(2) 索引自身行 SHA 写 33b03d39…（第一版
+#   索引的 SHA），清单记的却是终版 6f149736…；(3) REVIEW_PACK_05 非代码行写
+#   第一版的 bb6aaa1f…/76230，清单记的却是终版 52d3f921…/76461。
+#   另发现索引非代码表按小写路径排序（代码表与清单按原样排序），已在生成器中复现。
+# - 生成器 bug（已修，未进提交）：第一版打包时索引非代码表取了打包前的旧文件
+#   信息，REVIEW_PACK_05 行仍写旧值 52d3f921…/76461；发现后改成取磁盘最终值
+#   并重新打包，终版索引的 pack05 行已是新值 cbbf3f07…/78104（见 §6）。
+#   教训：派生文件（索引）必须取派生源（分卷）的最终值，不能取生成前的快照。
+
+## §4. 新旧 ZIP 对比（旧 ZIP 取自 git HEAD 的提交版本）
+# - 旧源码 ZIP：artifacts/release/tablefork-source-4025061.zip，
+#   3640623 B，SHA-256 79f9913489ec97ce8e84fff24d76a8716f45a06f5f23fcd173bbe12814c0cb23。
+# - 新源码 ZIP：同名，3641833 B，
+#   SHA-256 5ca6aec629adc562fa7f0e13bdcff0e6e0d9a1e85a222615666cad828c630693。
+# - 成员清单：新旧均为 174 个文件，集合 0 差异；内容不同的恰好 3 个文件：
+#   * scripts/verify_release.mjs：24320 B → 25963 B，
+#     429b33cb0c71… → e2118d4d2ab7…（本次唯一的产品外改动，567 → 595 行）。
+#   * review/REVIEW_PACK_05.md：76461 B → 78104 B，
+#     52d3f921b203… → cbbf3f076188…（该卷全文展开 verify 脚本，块随脚本而变；
+#     其余 4 卷逐字节不变）。
+#   * review/REVIEW_INDEX.md：27142 B → 27142 B，
+#     6f149736cca2… → 580a60cb8c23…（5 行改动：头 HEAD → commit A；
+#     分卷表 pack05 行 → 78104/cbbf3f07…；代码表脚本行 → e2118d4d…/595；
+#     自身行 → d97d98c8…（上一版索引的 SHA，自指，见 §7）；
+#     非代码 pack05 行 → cbbf3f07…/78104，即 §3 的 stale 行已修正）。
+# - 关于“只差一个文件”：任务书预期新旧 ZIP 只差 verify 脚本一个文件；
+#   实测为 3 个文件，但另 2 个是同一处改动的机械派生（pack05 含脚本全文、
+#   index 列其哈希），任务书 §(b) 本身也要求“pack 也要重打”。除这 3 个
+#   文件外其余 171 个文件逐字节一致，无其他差异，已查明原因，不强行凑数。
+# - 构建 ZIP：98684 B，SHA-256 af8f43a9af25baeb4a3d51a34c0eb76e6b926faeca7d9b587f7367e4eb7044b1，
+#   与旧的逐字节相同（dist/ 4 文件；verify 内全新构建 + 确定性重打亦一致）。
+#   dist 不受 verify 脚本改动影响，符合预期。
+
+## §5. 八条验收命令（按顺序，全部真实跑；退出码用重定向取真实值）
+# 1. npm ci — exit 0（added 101 packages；lockfile 未变）。
+# 2. npm run typecheck — exit 0（含 cli/）。
+# 3. npm test — exit 0，719/719（10 文件）。
+# 4. npm run oracle — exit 0，48/48 passed（0 failed）。
+# 5. npm run build — exit 0（48 模块；Worker chunk
+#    dist/assets/tablefork.worker-CSdEShYO.js 25.23 kB，与 T013 一致）。
+# 6. npm run test:e2e — exit 0，20 passed（27.7s，功能项目）。
+#    取消探测：artifacts/logs/T012-cancel-probe.json 3/3 clicked=true
+#   （35ms、78ms、9ms），与 T013 接线后一致。
+# 7. npm run test:e2e:perf — exit 0，1 passed（20.6s；隔离 p95 323.5ms，
+#    n=30，p50 220.7ms，min 181ms，max 324.9ms，目标 ≤500ms，PASS）。
+#    T012-performance.json 六组旧数据未动（本轮原始值只写
+#    artifacts/logs/T012-perf-browser.json，该文件是易变运行输出）。
+# 8. npm run verify:release — 提交前 exit 1，提交后见 §8。
+#    提交前（HEAD = commit A，两个日志文件被 e2e 写脏、未恢复）：
+#    20 项检查中 19 项 PASS，唯一 FAIL 是“新鲜 git archive 比对”
+#    （172/174 内容一致；bad: REVIEW_INDEX.md、REVIEW_PACK_05.md）——
+#    属预期：这两文件是重打后的新版，HEAD（commit A）里还是旧版，
+#    与 T013-release.txt §9 记载的提交前状态完全相同；并入提交 B 后即一致。
+#    关键证据（ISSUE-T013-6 已修）：“清单哈希与工作树一致”一项为 PASS，
+#    172/172 OK + 2 个易变运行输出跳过——两个日志文件写脏后不再误报 FAIL。
+#    另有一行 WARN：工作树多出 task_handoffs/P029-T013.json（见 §7）。
+
+## §6. 清单核对（新清单，174 文件）
+# - 清单：review/RELEASE_MANIFEST.json，174 个文件，逐文件 SHA-256 + 字节数；
+#   packaged_from_head = c1af8736989418b863b9b762535dd9128b3a7b5e（= commit A，
+#   经 git rev-parse 核对）；packaged_at_utc 2026-11-21T04:55:38.802Z；
+#   source_zip 3641833 B / 5ca6aec6…；dist_zip 98684 B / af8f43a9…。
+# - 清单 vs 工作树：174/174 逐文件 SHA 与字节数一致（独立 python 核对，
+#   0 不符；核对时工作树干净、e2e 尚未运行，故含两个易变日志文件在内）。
+# - 清单 vs 源码 ZIP：条目 174 == 清单，解包重算 174/174（verify 检查，
+#   提交前已 PASS；提交后重跑见 §8）。
+# - 清单 vs git HEAD：提交前 172 个与 HEAD blob 一致、2 个为重打后新版
+#   （REVIEW_INDEX.md、REVIEW_PACK_05.md，worktree 核对）；提交后重跑见 §8。
+# - REVIEW_PACK：5 卷，49 个代码文本文件；分卷表与各卷实测一致；
+#   REVIEW_INDEX.md 分卷表 5 卷全对。
+
+## §7. 冻结集、排除与自指说明
+# - 冻结集 = computeSourceSet(工作区) 减去 task_handoffs/P029-T013.json：
+#   该文件是 T013 打包完成后才提交的交接记录（T013 的“commit 2 交接 JSON”），
+#   不在 T013 冻结的 174 文件内；本次重打同一冻结集，文件数保持 174 不变。
+#   verify 对它只警告（“1 个源文件不在冻结清单中”），不失败，符合脚本设计。
+# - 本日志 T013-FIX-01.txt 与交接 P029-T013-FIX-01.json 在打包后才写，
+#   同样不在清单/ZIP 内（写时还不存在），verify 对它们只警告；其中本日志
+#   是自指排除的同类情况（记录两 ZIP 的哈希，装入 ZIP 会自指），与
+#   T013-release.txt 的处理一致；交接 JSON 是打包后才产生的记录。
+# - 索引自身行自指规则：索引文件无法写进自己的 SHA，故该行取重打之前磁盘上
+#   旧索引文件的 SHA 与字节数（本版：d97d98c8…/27142，指向上一版索引）；
+#   清单中该文件的 SHA（580a60cb…）取磁盘最终值，二者不同是自指使然，
+#   与 T013 的做法一致（当时清单记 6f149736…、行内写 33b03d39…）。
+# - 索引头“生成时 HEAD”已更新为 commit A（c1af873…），不再是 stale 的 79410a5。
+# - 未改动：bundle/、drive-copies/、v1.0.0-archive/、S0_REPORT.md、
+#   COORDINATOR_LOG.md、规格文件、T012-performance.json、test-results/、
+#   全部产品代码（src/、oracle/、tests/、fixtures/、cli/、docs/）。
+
+## §8. 提交后复核（提交 B 之后补记，见交接 JSON）
+# - 本日志随打包产物提交于 commit B，写日志时提交 B 尚不存在，故提交后复核
+#   （verify:release 全项重跑 + 脆弱性重测）记录在
+#   task_handoffs/P029-T013-FIX-01.json 的 commands/issues 中，不 amend 本日志。
+#   原因：verify 的“新鲜 git archive 比对”只有在新版 index/pack05 入 HEAD
+#   后才能全过（见 §5），三步提交结构下提交后结果只能记在交接里；
+#   T013 当时是用 amend 把 §9 补进日志，本卡按任务书改用三步提交，不 amend。
+# - 提交后必做（交接 JSON 为准）：npm run verify:release exit 0（20/20 PASS，
+#   含 archive 比对 174/174）；脆弱性重测：再跑一次 npm run test:e2e 把两个
+#   日志文件写脏、不恢复、直接跑 npm run verify:release，必须 exit 0，
+#   跑完再 git checkout -- 恢复两个日志文件，保持树干净。

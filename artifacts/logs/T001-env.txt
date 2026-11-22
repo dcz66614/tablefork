@@ -1,0 +1,108 @@
+# P029-T001 environment evidence log
+# Generated: 2026-11-21T00:12:50Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: e6283a1995fb4e63848227dc5754be76e229e2ec
+# Working path: /home/hatch/workspace/p029-tablefork
+
+## 1. OS / platform
+- OS: Ubuntu 24.04.5 LTS (Noble Numbat)
+- Kernel: Linux htch-runtime 7.0.0-44-generic x86_64
+- node -p "process.platform + ' ' + process.arch": linux x64
+- WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed)
+
+## 2. Toolchain versions (real output)
+- node --version: v24.22.1
+- npm --version: 10.9.4
+- git --version: 2.43.0
+- python --version: NOT FOUND — `python: command not found` (exit 127)
+- python3 --version: Python 3.12.3
+- npx playwright --version: Version 1.65.1
+
+## 3. Frozen dependency versions (from package-lock.json, lockfileVersion 3)
+- react 19.3.1
+- react-dom 19.3.1
+- typescript 5.9.3
+- vite 7.3.8
+- @vitejs/plugin-react 5.2.0
+- vitest 4.1.12
+- @playwright/test 1.65.1
+- tsx 4.23.15
+- @types/react 19.3.0
+- @types/react-dom 19.3.0
+- @types/node 24.19.2
+- Total installed packages: 100 (npm install) / 101 (npm ci — count includes the root project entry)
+- package-lock.json SHA-256: 80a86c951542fc09006c2f7e44f8686bf03f561935fbfe2e34b72e9e05d7974f
+- package.json SHA-256: 984731e96d2e8ef4dd480009b9fbaf067cfc3159fa96b0e6c13c1a20ee3ab403
+
+## 4. Acceptance commands (run in /home/hatch/workspace/p029-tablefork)
+- node -v: exit 0 (v24.22.1)
+- npm -v: exit 0 (10.9.4)
+- npm ci: exit 0 (added 101 packages)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run build (tsc --noEmit && vite build): exit 0
+  - vite v7.3.8, 27 modules transformed, built in 1.40s
+  - dist/index.html 0.33 kB, dist/assets/index-CmRv1UBb.js 222.51 kB (gzip 69.30 kB)
+- Fresh-copy reproduction (tar of worktree without node_modules/dist/.git to /tmp/p029-clone-test, then npm ci / typecheck / build): all exit 0
+  - clone npm ci: exit 0; clone typecheck: exit 0; clone build: exit 0 (built in 1.80s, identical output sizes)
+  - clone test dir removed afterwards; /tmp back to 500M free
+- npm test (vitest run): exit 1 — EXPECTED at T001, NOT a failure: no test files exist yet
+  ("No test files found, exiting with code 1"). Tests are T011's scope. Recorded as NOT_RUN for pass/fail purposes.
+
+## 5. Playwright Chromium
+- Install command: npx playwright install chromium (via the VM's HTTPS_PROXY): exit 0
+- Chromium: 159.0.8154.6 (playwright chromium v1255)
+- Headless shell: 159.0.8154.6 (playwright chromium-headless-shell v1255)
+- Launch check (chromium.launch() via @playwright/test, then version + close): exit 0, CHROMIUM_LAUNCH_OK version=159.0.8154.6
+- Install location: /home/hatch/.cache/ms-playwright/chromium-1255 (also chromium_headless_shell-1255)
+- NOTE: ~/.cache/ms-playwright already contained older builds (chromium-1248, chromium-1254, headless-shell 1248/1254) from earlier unrelated work; the 1255 build above is the one matching @playwright/test 1.65.1 and was freshly downloaded by this task.
+
+## 6. Network / install notes
+- HTTPS_PROXY is set on this VM (http://hatch-runtime:<redacted>@hatch-egress-proxy:3128); npm registry access and the Playwright CDN download both went through it and succeeded. No other network access was needed.
+- No CDN / online fonts / models / APIs are used at runtime: vite build output is a static local bundle; index.html references only the local /src/main.tsx entry.
+
+## 7. ADRs (deviations from the plan, recorded here per IMPLEMENTATION_PLAN §2.2)
+- ADR-P029-T001-01 (npm peer-resolution bug): plain `npm install` on npm 10.9.4 FAILS with
+  `TypeError: Cannot read properties of null (reading 'edgesOut')` in arborist
+  (#loadPeerSet, while resolving vitest@4.1.12's peer graph). This is an npm 10.9.4/arborist
+  bug, not a dependency conflict. Workaround used: `npm install --legacy-peer-deps`
+  (exit 0, 100 packages). The resulting package-lock.json is VALID: plain `npm ci`
+  (no flags) succeeds from it (exit 0, both in-repo and in the fresh-copy test), so
+  future clones only need `npm ci`. When ADDING a dependency later, re-run install with
+  --legacy-peer-deps if the same arborist error reappears; do not upgrade the system npm
+  (it lives in the read-only VM image /opt/hatch-image/bin).
+- ADR-P029-T001-02 (python command missing): `python` does not exist on this VM; only
+  `python3` (3.12.3). The fixed `oracle` script in package.json therefore uses
+  `python3 oracle/reference.py ...` instead of the plan's `python ...`. Windows
+  behaviour of `python` is NOT verified here (WINDOWS_NOT_TESTED); a later Windows
+  check may need a `py -3` wrapper, but the script as frozen works on this Linux VM.
+  The oracle itself is T006's file; the script path/args are otherwise exactly as in plan §2.3.
+- ADR-P029-T001-03 (no other version deviation): all target families were met on this VM
+  with real latest-compatible releases — Node 24.x, TypeScript 5.x, React 19.x, Vite 7.x,
+  Vitest 4.x, Playwright 1.65.x, Python 3.12. No compatibility downgrade was needed.
+
+## 8. Scaffold placeholders (T001 only, to be replaced by T009)
+- index.html — minimal HTML shell with <div id="root"> and /src/main.tsx entry (SHA-256 4f212f779132493cd11329b2514fedc359922f072e4ac0f8154403fc7ba627da)
+- src/main.tsx — renders only an empty root node inside <StrictMode>; header comment marks it
+  "T001 SCAFFOLD PLACEHOLDER ... To be replaced by T009" (SHA-256 85e7641aec89dc5fbb39fee17a7138fadde54d1dc6aab11ce3141267fc766ee9)
+- src/vite-env.d.ts — single `/// <reference types="vite/client" />` line (SHA-256 65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5)
+- No business logic was written. No other files were created or modified by this task.
+- package.json scripts are exactly the 9 fixed scripts from IMPLEMENTATION_PLAN §2.3
+  (dev, typecheck, test, test:core, test:e2e, build, analyze, oracle, verify:release),
+  with the single ADR-P029-T001-02 change (python3 in `oracle`). License field: MIT.
+  `tsx` is a locked devDependency (4.23.15).
+
+## 9. Files changed by this task (only these)
+- package.json, package-lock.json, tsconfig.json, vite.config.ts, playwright.config.ts
+- index.html, src/main.tsx, src/vite-env.d.ts (scaffold placeholders, see §8)
+- artifacts/logs/T001-env.txt (this file)
+- task_handoffs/P029-T001.json
+- docs/, bundle/, drive-copies/, v1.0.0-archive/, S0_REPORT.md untouched.
+- dist/ and node_modules/ are git-ignored build/install outputs, not committed.
+
+## 10. Open issues
+- None blocking. Follow-ups for later tasks, not T001 failures:
+  - T006: oracle/reference.py does not exist yet; `npm run oracle` is NOT_RUN until then.
+  - T010: cli/analyze.ts does not exist yet; `npm run analyze` is NOT_RUN until then.
+  - T011: no tests exist yet; `npm test` / `npm run test:core` exit 1 with "No test files found" until then.
+  - T012: no tests/e2e specs exist yet; `npm run test:e2e` is NOT_RUN until then.
+  - T013: scripts/verify_release.mjs does not exist yet; `npm run verify:release` is NOT_RUN until then.
+  - Windows run: WINDOWS_NOT_TESTED (see §1).

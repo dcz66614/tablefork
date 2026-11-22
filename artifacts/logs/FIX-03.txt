@@ -1,0 +1,254 @@
+P029-FIX-03: NBSP parity Golden G49 + manifest packaged_from_head wording (R1 P2 #3, ISSUE-T014-1)
+======================================================================
+执行员：FIX-03 子代理；工作根目录 ~/workspace/p029-tablefork/
+基线：HEAD 2f9a700（FIX-02 handoff 提交；树干净，除协调员未跟踪文件
+COORDINATOR_LOG.md / S0_REPORT.md / test-results/ 外，未碰）。
+执行时间：2026-11-21 ~11:02–11:20 GMT　环境：Linux x64，Node v24.22.1，
+npm 10.9.4，Python 3.12.3，Chromium 159.0.8154.6，共享 VM（1.5 vCPU）。
+SPEC_VERSION 未动（仍 1.0.2）；模型路线：Sam 电脑关机，WorkBuddy 不通，
+未用任何外部模型路由——全部工作由本机执行，无外部消息。
+
+1. 缺陷与核查（R1 P2 #3，主聊天裁决：以规格为准，TS 向 Oracle 对齐）
+--------------------------------------------------------------------------------
+- TS src/core/parse.ts:269 的 normalizeCellText 用
+  `.replace(/[ \t\n\f\r]+/g, ' ').trim()`——JS .trim() 会去掉首尾 U+00A0。
+- Python Oracle oracle/reference.py 的 normalize_text（约 179–183 行）用
+  `.strip(" \t\n\r\f\v")`，只去 ASCII 空白、保留 U+00A0。
+- 亲自核查 Oracle：对 '\u00a0x\u00a0'、'  x  '、'\u00a0 x \u00a0'、'a\u00a0b'、
+  '\u00a0\u00a0' 五组输入，Oracle 输出分别为 '\u00a0x\u00a0'、'x'、'\u00a0 x \u00a0'、
+  'a\u00a0b'、'\u00a0\u00a0'——已符合口径，oracle/reference.py 一字未动。
+- 规格口径已定：FIX-02 已在 PROJECT_BOOK.md §3.1 明确“首尾 trim 仅去 ASCII
+  空白、U+00A0 保留”（文字口径，与 Oracle 文档串 J6/O5 一致），本卡实现它。
+
+2. 改动（代码；仅 normalizeCellText 的 trim 部分）
+--------------------------------------------------------------------------------
+src/core/parse.ts：
+- normalizeCellText 改为 decodeEntities 后先折叠连续 ASCII 空白，再用
+  `.replace(/^[ \t\n\f\r]+|[ \t\n\f\r]+$/g, '')` 做首尾 trim（仅去 ASCII 空白），
+  不再调用 .trim()；折叠集 [ \t\n\f\r] 与注释一致，未动。
+- 同步更新函数注释与文件头裁决 5（“首尾 trim（仅去 ASCII 空白；U+00A0 保留）”，
+  并注明此前 .trim() 会误去首尾 U+00A0）。
+- 其余解析逻辑一字未动；src/ui/*、report.ts、types.ts、worker/*、cli/*、
+  review/、artifacts/release/、tests/e2e/、SPEC_VERSION 均未碰。
+
+3. 改动（Golden G49；独立 Golden，预期来自 Oracle、非 TS 回填）
+--------------------------------------------------------------------------------
+fixtures/golden/G49.json（新）：
+- 输入：<table><tbody><tr><td>&nbsp;x&nbsp;</td><td>y&nbsp;z</td></tr></tbody></table>，
+  策略 ORIGIN_EMPTY。含 GPT 复现用例 `&nbsp;x&nbsp;` 单元格（c00），另有
+  内部 NBSP 对照格 `y&nbsp;z`（c01）。
+- 文件格式与 G01–G48 一致（indent 2、插入顺序、ensure_ascii=False、末尾换行）。
+
+oracle/golden_expected.json：count 48→49，追加 G49 条目（diff +102 行，格式未动：
+indent 1、sort_keys、ensure_ascii=False、末尾换行，与原文件逐字节格式一致）。
+- 预期生成方法（已验证，非 TS 回填）：先以 Oracle analyse() 复算 G01 与 G33，
+  与已存预期逐项比对零差异（compare_case 返回空），确认“Oracle analyse() 输出
+  去掉 spec_version 即等于已存 expected”的生成口径成立；再用同一方法生成 G49。
+- 手验关键字段（独立于 Oracle 内部实现）：
+  cells c00 text = '\u00a0x\u00a0'（首尾 NBSP 保留），c01 text = 'y\u00a0z'；
+  f_origin = f_repeat = '| \u00a0x\u00a0 | y\u00a0z |\n| --- | --- |\n'；
+  inputHash = 249ab59a67258f82ad4571d09fbc9484f81590e090dc9e5712cda2ea714885d5
+  （= SHA-256(输入 HTML)，独立重算一致）；rows=1、cols=2；
+  witness 两个策略均为 NO_WITNESS_FOUND（单行无合并，无可拆分候选）；
+  handover 两行均含原样 NBSP。
+- 生成脚本为一次性脚本（.tmp-tmpdir/gen_g49.py，未提交），方法记于此。
+
+tests/core/golden.test.ts：计数 48→49（文档断言 count/fixtures/文件列表三处；
+头注释注明 G49 由 FIX-03 新增）。G49 由通用逐案比对覆盖（8 条断言）。
+tests/core/nbsp.test.ts（新，7 条断言）：
+- normalizeCellText 单元级：'&nbsp;x&nbsp;' → '\u00a0x\u00a0'（GPT 复现用例）；
+  仅 NBSP 的格保留两个 NBSP；内部 NBSP 不动；ASCII 空白照常折叠/去首尾；
+  数值引用 &#160; 与 &nbsp; 等价。
+- G49 端到端：TS 解析的 cells / F_origin / F_repeat 与
+  golden_expected.json 的 G49 Oracle 预期逐项一致；inputHash 与独立
+  SHA-256 一致。NBSP 常量写为 '\u00A0' 转义，不依赖不可见字面量。
+tests/core 其余四文件头注释的“48 Golden”同步改为 49（flatten/report/
+worker.test.ts；report-facts.test.ts 的 48/48 改为 49/49）。内容断言未动。
+
+4. 改动（规格 md + docx 同步；SPEC_VERSION 仍 1.0.2）
+--------------------------------------------------------------------------------
+docs/PROJECT_BOOK.md：
+- 封面 v1.0.2 勘误注追加 (5) FIX-03 addendum（2026-11-21）：新增 Golden G49
+  （首尾 U+00A0 保留，`&nbsp;x&nbsp;`），Golden 总数 48→49；normalizeCellText
+  的首尾 trim 改为仅去 ASCII 空白（实现向 Oracle 对齐，R1 P2 #3）。
+- §2 机器层可验“48 份”→“49 份”；§7.1 标题“48 个”→“49 个”，分组表新增
+  G49 行（1 个：首尾 U+00A0 保留、TS 与 Oracle 一致）；Oracle 句“48/48”→“49/49”；
+  §11 证据清单“48 Golden”→“49 Golden”。
+docs/IMPLEMENTATION_PLAN.md：
+- 卷首 v1.0.2 勘误注追加同款 FIX-03 addendum；正文 11 处计数同步改为 49
+  （S3 表 49/49、T011 行 Golden 49、T006 输入 49 个、T011 标题/目标/输出
+  G01..G49/证据 49、D8、ALG02、样本数 49、检查清单 49/49）。
+- 有意未改：两份 v1.0.1 勘误注内的“48/48”（那是 v1.0.1 时冻结门槛的历史记录，
+  改写等于篡改历史）；Stack Overflow 引用的“48.0%”是外部统计，与 Golden 无关。
+docs/*.docx（与 md 同步，FIX-02 方法：定向 <w:t> run 文本替换 + 段落末尾追加 run）：
+- 全部 17 处替换在 word/document.xml 中逐一断言恰好出现 1 次，否则 abort；
+  其余 zip 条目原样复制（与改前备份比对：18 条目，document.xml 外零差异）。
+- §7.1 的 md 表格在 docx 里不是真表格，是单段落 pipe 文本，故 G49 行以追加
+  run 的方式接在 G41–G48 行之后（段落内空格分隔，与既有行一致）。
+- docx 正文不写反引号（沿用既有 docx 惯例：md 的 `code` 在 docx 里无反引号，
+  如 §6.1 AnalyzeResult）；勘误注 addendum 与 G49 行的 `&nbsp;` 写为
+  `&amp;nbsp;`（XML 转义）。
+- 核对：python-docx 抽全文——两份 v1.0.2 addendum、全部 49 计数、G49 行均在位；
+  LibreOffice 渲染两份 docx 均成功，页数 11 + 14（与 v1.0.1/v1.0.2 时一致，未变）。
+- 同步脚本为一次性脚本（.tmp-tmpdir/fix03_docx.py，未提交），方法记于此。
+- 事故记录：脚本第一版因 dict 键错误在写盘时 abort，而 ZipFile(path, "w")
+  打开目标即截断，导致 docs/PROJECT_BOOK.docx 一度只剩 22 字节。发现后立即
+  用改前备份（.tmp-tmpdir/PB.docx.bak，改前 59,054 B）恢复并核实 zip 完好；
+  脚本改为先写临时文件再原子替换（os.replace），重跑成功。此事故未造成任何
+  内容丢失（备份在先、恢复在后均有核实），教训已记入本节：docx 同步脚本
+  必须写临时文件再原子替换，绝不直接以 "w" 打开目标。
+
+bundle/ 与 ZIP（bundle/ 与根 ZIP 均 gitignored，Drive 为分发渠道）：
+- bundle/ 四份规格与 docs/ 同步（改后两地字节一致）；SPEC_MANIFEST.json 重建：
+  spec_version 1.0.2，generated 2026-11-21，5 文件 size + SHA-256 重算
+  （IDEATION 26245 B 未变；PROJECT_BOOK.md 33528 B b2800047…；
+  PROJECT_BOOK.docx 59225 B c270ec42…；IMPLEMENTATION_PLAN.md 38768 B b22f66ed…；
+  IMPLEMENTATION_PLAN.docx 63574 B 9c00ac9b…）。
+- P029_SPEC_BUNDLE.zip 重打（原顺序 6 文件，确定性打包：1980-01-01 时间戳、
+  deflate 9）：165,130 B，SHA-256 9d94b9b14b20b980158917ce3c11b0855f0c18d1df4e8dff3753d2d3afcd79ab，
+  MD5 772becf18f16df31001234c87253a456；解包 6/6 与 bundle/ 字节一致。
+  根目录副本为同一文件。
+
+5. 改动（任务二：ISSUE-T014-1 清单注释口径）
+--------------------------------------------------------------------------------
+前提纠正（任务书的前提与事实有一处出入，如实记录）：
+- 任务书说“改 scripts/verify_release.mjs 里生成 manifest notes 的模板”，
+  但本文件此前根本没有 notes 模板——旧清单 review/RELEASE_MANIFEST.json 的
+  notes 是 T013 打包时一次性手写的（git 历史可证：git log -S 无任何提交在
+  verify_release.mjs 里写过 notes）。本卡不是“改模板”，而是首次确立模板：
+  在 verify_release.mjs 导出 buildManifestNotes()（+ 完整注释说明），
+  重冻结卡生成新清单时必须调用它生成 notes，不得再手写沿用旧句。
+- 任务书的定义句“packaged_from_head = 源码 ZIP 所打包的树的提交”按字面读
+  与其后括号内的实例数字矛盾：若 packaged_from_head 就是 ZIP 的树，它应为
+  f53cef4，而不是 c1af873。按独立审查 review/INDEPENDENT_REVIEW.md §8 的
+  精确结论（任务书括号内的数字与之完全一致）：packaged_from_head 是生成
+  清单与 ZIP 时的 HEAD 提交（c1af873）；ZIP 所打包的是打包时的工作树，
+  其内容 = 该树 + 打包时机械重生成的 2 个文件 = 冻结提交 f53cef4 的树。
+  模板采用审查建议的精确口径（不是任务书的简写定义），否则新 notes 仍会
+  写错。请协调员裁决此口径（见 §7 D3）。
+- 本卡不改 review/RELEASE_MANIFEST.json（旧冻结，重冻结卡重新生成）。
+
+scripts/verify_release.mjs 新增导出函数 buildManifestNotes({ baseCommitShort,
+packagedFromHead, frozenCommit, regeneratedFiles, handoffRef, generatedBy })，
+返回的 notes 逐句口径：
+1. packaged_from_head：生成清单与源码 ZIP 时的 HEAD 提交（点名完整 SHA）。
+2. 源码 ZIP 所打包的是打包时的工作树：其内容 = packaged_from_head 的树 +
+   打包时机械重生成的 <文件>（N 个文件），等于冻结提交 <短 SHA> 的树（逐文件一致）。
+3. verify:release 检查 (a) 拿 ZIP 对 git HEAD（冻结提交）比对，不是直接对
+   packaged_from_head——旧句“ZIP 内容与 packaged_from_head 的树逐文件核对”作废。
+4. 冻结发布提交（result_commit）见 <handoff>；本清单由 <卡号> 从修复提交重新生成。
+
+当前实例的改后 notes 准确措辞（供重冻结卡直接采用；函数实测输出与此逐字一致，
+见 .tmp-tmpdir/check_notes.mjs，EXACT MATCH: true）：
+源码 ZIP 文件名中的短 SHA 为基线提交 4025061（T013 的 base_commit）。
+packaged_from_head：生成清单与源码 ZIP 时的 HEAD 提交
+（c1af8736989418b863b9b762535dd9128b3a7b5e）。
+源码 ZIP 所打包的是打包时的工作树：其内容等于 packaged_from_head 的树 +
+打包时机械重生成的 review/REVIEW_INDEX.md 与 review/REVIEW_PACK_05.md
+（2 个文件），等于冻结提交 f53cef4 的树（逐文件一致）。
+verify:release 检查 (a) 拿 ZIP 对 git HEAD（冻结提交）比对，不是直接对
+packaged_from_head。
+冻结发布提交（result_commit）见 task_handoffs/P029-T013-FIX-01.json。
+本清单由 P029-T013-FIX-01 从修复提交重新生成。
+
+R2 草稿须写明的精确数字（重冻结卡负责）：ZIP 树是冻结提交 f53cef4
+（f53cef4f89601be68c607e181145981d1c5d6025），packaged_from_head 是 c1af873
+（c1af8736989418b863b9b762535dd9128b3a7b5e），差的 2 个文件是打包时机械重生成
+的 review/REVIEW_INDEX.md 与 review/REVIEW_PACK_05.md；ZIP 与 c1af873 的树
+为 172/174，与 f53cef4 的树为 174/174（独立审查已证）。
+
+6. 验收（全部退出码 0；TMPDIR 均指到持久磁盘 .tmp-tmpdir）
+--------------------------------------------------------------------------------
+- npm run typecheck：exit 0（tsc --noEmit）。
+- npm run test:core：739/739（11 files；724 既有 + 15 新增 = G49 通用逐案 8 条
+  + nbsp.test.ts 7 条；含 200 种子交叉核对）。
+- npm run oracle：49/49 passed（0 failed；G49 在内，PASS G49 逐条可见）。
+- npm run test:e2e：22 passed（41.6s）。
+- npm run test:e2e:perf：1 passed（20.7s）。
+- npm run build：exit 0（built in 2.30s；Worker chunk
+  dist/assets/tablefork.worker-KGBIv54Y.js 25.39 kB）。
+- GPT 复现核对（TS 与 Oracle 各自跑 `&nbsp;x&nbsp;`）：
+  TS normalizeCellText('&nbsp;x&nbsp;') → '\u00a0x\u00a0'；
+  Oracle normalize_text('\u00a0x\u00a0') → '\u00a0x\u00a0'；两者一致（保留首尾 NBSP）。
+  对照组：'  x  ' → 'x'（两侧一致）；'&nbsp; x &nbsp;' → '\u00a0 x \u00a0'；
+  'a&nbsp;b' → 'a\u00a0b'；'&nbsp;&nbsp;' → '\u00a0\u00a0'。全部两侧一致。
+  （脚本 .tmp-tmpdir/repro_nbsp.ts / repro_nbsp.py，一次性，未提交。）
+- buildManifestNotes 实测：当前实例参数输出与 §5 所载措辞逐字一致。
+- Drive 核对：改动过的四份规格 + bundle ZIP 逐个回读，size + md5Checksum +
+  下载内容 md5 全部等于本地（见 §8）。
+- verify:release 本卡不跑：review/RELEASE_MANIFEST.json 是旧冻结
+  （base 4025061、spec 1.0.1），跑它必然 FAIL，与本卡改动无关；重冻结卡再跑。
+- e2e 运行写脏的易变文件（2 个日志 + 5 张截图）已用 git checkout 恢复，
+  不在提交内（与 FIX-01/FIX-02 做法一致）；.tmp-tmpdir 已删除。
+
+7. 决定与说明
+--------------------------------------------------------------------------------
+D1. Oracle 不动：normalize_text 已符合 §3.1 口径（亲自核查五组输入）；只有
+    TS 向 Oracle 对齐。oracle/reference.py 第 1062 行注释“48 cases against
+    the wrong spec”仍写 48——只是注释里的计数，本卡按任务书文件归属不碰该文件
+    （行为无出入），留待重冻结/后续卡顺手改，不值得为此单独改 Oracle。
+D2. verify:release 不跑（见 §6）；artifacts/release/ 未动；review/ 未动。
+D3. notes 模板口径：采用独立审查 §8 的精确定义（packaged_from_head = 打包时
+    HEAD；ZIP = 该树 + 2 重生成文件 = 冻结提交树），未采用任务书的简写定义
+    （该定义与实例数字矛盾，见 §5 前提纠正）。请协调员裁决——若主聊天坚持
+    简写定义，须另行说明 c1af873 与 f53cef4 的关系如何表述才不自相矛盾。
+D4. \v（U+000B）空白集差异——已发现、未修、留待裁决：TS 折叠/trim 集是
+    [ \t\n\f\r]（无 \v），Oracle 是 [ \t\n\r\f\v]（有 \v）。即含 \v 的单元格
+    两侧仍可能不一致（TS 保留 \v，Oracle 折为 U+0020/去首尾）。这与 NBSP 同属
+    “ASCII 空白集”口径，但任务书规定的改动是 trim 仅去 ASCII 空白且“保持
+    连续 ASCII 空白折为一个 U+0020 不变”，并给出不含 \v 的示例正则；擅自把
+    \v 加进 TS 折叠集属于规定范围外的行为变更，故本卡只修 trim、不碰 \v，
+    在此点名留待协调员/主聊天裁决是否另开一卡对齐。同样，任务书明确不碰的
+    其余 Oracle 差异继续携带：命名实体集合、DOCTYPE 与隐式/显式 tbody
+    混用规则。
+D5. README.md / CHANGELOG.md 未动：任务书文件归属只列 PROJECT_BOOK.md 与
+    IMPLEMENTATION_PLAN.md；两者是历史记录（CHANGELOG 记 v1.0.0 时期成绩），
+    计数更新留待重冻结/发版卡统一处理。
+D6. docx 未从 md 重排生成（见 §4）：无可靠生成方法记录，定向 run 文本替换 +
+    渲染核对是与 FIX-02 一致的做法；md 与 docx 已逐项核对一致。另见 §4 事故记录。
+
+8. Drive 核对（原位替换，文件 id 不变；2026-11-21 ~11:10 GMT）
+--------------------------------------------------------------------------------
+P029 文件夹 1_sqMEKpcMEMXfOBxK5PJwvAp6MHlnNTD
+- 01_project_book/PROJECT_BOOK.md
+  id 1NBXXTR9yy4942lHUjrrLxz4xvVCX1Rzr；33,528 B；
+  md5 7bf87b682c23b5c43047b20b0260e44f（Drive md5Checksum 与下载内容 md5 一致）
+- 01_project_book/PROJECT_BOOK.docx
+  id 1GOveEEjfpFxzv3ku-xQwy8lEPacgkgkp；59,225 B；
+  md5 14220d24976effb2579e5310dcf22deb（一致）
+- 02_implementation_plan/IMPLEMENTATION_PLAN.md
+  id 1LLs5KGh8Ij4gQOiS59gbR091bbZLQjlr；38,768 B；
+  md5 f27e9a3060921ca5aa791fc414adf420（一致）
+- 02_implementation_plan/IMPLEMENTATION_PLAN.docx
+  id 1BgnAoJYTVirmjs4KKI04DagRjnsALd7C；63,574 B；
+  md5 4de970c6a340334c53d1f44e3a58b77b（一致）
+- 根目录 P029_SPEC_BUNDLE.zip
+  id 1AzHZJJ-tiQFP-aN1VCeYD-NqCLpcMeMP；165,130 B；
+  md5 772becf18f16df31001234c87253a456（一致）
+5/5 size + md5Checksum + 下载内容 md5 全部与本地相等。
+
+9. 遗留项
+--------------------------------------------------------------------------------
+- R1 P2 #3（NBSP）由本卡修复；ISSUE-T014-1（清单注释口径）由本卡修模板、
+  待重冻结卡用新模板生成新清单才正式闭合。R2 仍须主聊天确认后才能发送。
+- verify:release 待重冻结卡跑（见 D2）；新清单须用 buildManifestNotes 生成 notes。
+- 携带的 Oracle 差异（D4）：\v 空白集、命名实体集合、DOCTYPE 与隐式/显式
+  tbody 混用规则；另 oracle/reference.py 注释里的“48 cases”待顺手改。
+- 既往 P2 记录问题未改动，留待终审。
+
+10. 提交
+--------------------------------------------------------------------------------
+- 修复提交：见 task_handoffs/P029-FIX-03.json 的 result_commit
+  （消息 "P029-FIX-03: NBSP parity Golden G49 + manifest packaged_from_head wording (R1 P2)"；
+  不含 handoff——handoff 须填该提交的完整 SHA，按既往做法另起一个 handoff 提交）。
+- handoff 提交：task_handoffs/P029-FIX-03.json 本身。
+- 变更集（12 个已跟踪文件 + 2 个新文件）：src/core/parse.ts、
+  fixtures/golden/G49.json（新）、oracle/golden_expected.json、
+  tests/core/nbsp.test.ts（新）、tests/core/golden.test.ts、
+  tests/core/flatten.test.ts、tests/core/report.test.ts、
+  tests/core/report-facts.test.ts、tests/core/worker.test.ts、
+  docs/PROJECT_BOOK.md、docs/PROJECT_BOOK.docx、
+  docs/IMPLEMENTATION_PLAN.md、docs/IMPLEMENTATION_PLAN.docx、
+  scripts/verify_release.mjs、artifacts/logs/FIX-03.txt（本文件）。
+  bundle/ 与 P029_SPEC_BUNDLE.zip 为 gitignored，按既定做法不同步进 git，
+  以 Drive 为准（§8 已核对）。

@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G11",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td colspan=\"2\">合并</td><td>X</td></tr><tr><td>P</td><td>Q</td><td>R</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G11"
+}

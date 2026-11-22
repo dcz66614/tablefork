@@ -1,0 +1,274 @@
+# P029-T008 records evidence log
+# Generated: 2026-11-21T01:10Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 045de63 (P029-T007 handoff; product 8eb834d).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T008 逐槽来源证据与结果 JSON — src/core/records.ts + src/core/report.ts
+#        + temporary local tests (T008 TEMPORARY, to be taken over by T011).
+# Environment: Node v24.22.1, npm 10.9.4, vitest 4.1.12.
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 0
+  - Test Files: 5 passed (5) — tests/core/t003-temp.test.ts (67 tests, unchanged),
+    tests/core/t004-temp.test.ts (19 tests, unchanged),
+    tests/core/t005-temp.test.ts (17 tests, unchanged),
+    tests/core/t007-temp.test.ts (29 tests, unchanged),
+    tests/core/t008-temp.test.ts (17 tests, new).
+  - Tests: 149 passed (149), 0 failed. Duration ~1.9s.
+  - NOTE: tests/property does not exist yet (T011 scope); vitest runs the
+    tests/core filter and exits 0. No property tests exist or are claimed.
+    Previous total was 132/132; this card adds 17 → 149/149.
+- Extra evidence script (temp, NOT committed): npx tsx /tmp/t008-evidence.ts: exit 0
+  (full output in §5/§6; the script re-parses alternativeHtml, rebuilds both
+  grids, re-flattens and re-hashes from scratch — nothing taken on trust).
+- Extra build check (NOT a card acceptance command): npm run build: exit 0
+  (vite v7.3.8, 27 modules transformed, built in 1.46s). dist/ removed
+  afterwards; git status afterwards shows only the intended new files.
+- No external model API called; no Qoder; no password/key files touched.
+- git status at log time: only the new T008 files are untracked
+  (src/core/records.ts, src/core/report.ts, tests/core/t008-temp.test.ts,
+  artifacts/logs/T008-records.txt); S0_REPORT.md and COORDINATOR_LOG.md
+  remain untouched untracked coordinator files.
+
+## 2. Files produced by this task (only these)
+- src/core/records.ts (new)
+- src/core/report.ts (new)
+- tests/core/t008-temp.test.ts (new; header-marked T008 TEMPORARY — to be taken over by T011)
+- artifacts/logs/T008-records.txt (this file)
+- task_handoffs/P029-T008.json (second commit, see §9)
+NOT modified (per the card): oracle/*, src/core/witness.ts, src/core/parse.ts,
+src/core/grid.ts, src/core/headers.ts, src/core/flatten.ts, src/core/compare.ts,
+src/core/types.ts, src/core/index.ts (mounting left to T013 as instructed),
+UI, Worker, docs/, bundle/, package.json, package-lock.json, S0_REPORT.md,
+COORDINATOR_LOG.md. The new modules are imported directly by relative path
+in tests and in the /tmp evidence script.
+
+## 3. SHA-256 of the produced source files (sha256sum, real output)
+- 7f52c5e9d9860422cb83bf1ccb737eedd22b6a2c597e32c97c6e301df1f5854  src/core/records.ts
+- 316fa703edc007ecbc1fada44e74f7d2fbc37a5c85a0571acdf9ea9f522c7fc7  src/core/report.ts
+- d8cc82aee71c06d90321fea27916bd08e8ac43b9529bcc6ddb0e1db56b8c161e  tests/core/t008-temp.test.ts
+(Git result_commit SHA is recorded in task_handoffs/P029-T008.json, not here,
+to avoid self-reference: this log is part of the step-1 commit.)
+
+## 4. Implemented functions (public API)
+records.ts — pure functions, no Node-only calls, no import of witness.ts:
+- buildSlotFacts(grid: GridResult): SlotFact[] — one record per slot occupied
+  by a TD cell (row-major order); rowHeaders/colHeaders/headerStatus taken
+  from buildHeaderPaths (frozen §3.3); value is the owner cell's text verbatim
+  as a string, never converted to Number; th slots produce no records.
+- formatSlotFact(fact: SlotFact): string — §5.4 serialization:
+  `[R{row}C{col} source={cellId}] 行标题: {row > ... | ?} | 列标题: {col > ... | ?} | 数值: {value}`
+  (0-based grid coordinates; header paths joined with ' > '; missing side
+  written as '?').
+- formatSlotFacts(facts: SlotFact[]): string — one line per fact, LF-joined,
+  no trailing newline; empty facts → ''.
+- UNKNOWN_TITLE = '?' (exported constant for the missing-title placeholder).
+report.ts — public browser kernel, no `node:crypto` import (code-level grep
+verified: `from 'node:crypto'` matches nothing in records.ts/report.ts):
+- analyze(input: AnalyzeInput): Promise<AnalyzeResult> — §6.2 kernel:
+  validate → parseValidatedTable → buildGrid → flattenGrid(strategy) →
+  compareMarkdown(suppliedMarkdown, canonical) → findWitness(html, strategy)
+  → buildSlotFacts(grid) → warnings → assemble. Invalid input throws
+  TableForkInputError (enum code), never a misleading result. proof is
+  copied verbatim from findWitness when certified; otherwise the proof field
+  is omitted entirely (J-T008-3). Warnings (fixed order): EXACT_DIFF note,
+  NO_WITNESS_FOUND "not proven safe" note, unknown-header count note.
+- sha256Utf8WebCrypto(text: string): Promise<string> — browser-safe SHA-256
+  (hex lowercase) over UTF-8 bytes via crypto.subtle.digest; analyze uses it
+  to independently re-hash canonicalMarkdown and the A graph and check them
+  byte-for-byte against proof.markdownSha256 / proof.aGraphSha256
+  (mismatch throws a plain Error: internal invariant, not input error).
+  sha256Utf8 (witness, node:crypto) is re-exported from report.ts only so
+  callers/tests can compare the two implementations from one import path;
+  report.ts itself never calls node:crypto directly.
+
+## 5. Evidence: TFK-A (§6.3) — two record lines + hash attribution
+# Verbatim output of `npx tsx /tmp/t008-evidence.ts` (exit 0), §6.3 A HTML:
+# <table><thead><tr><th rowspan="2">产品</th><th colspan="2">2026预算</th></tr>
+# <tr><th>收入</th><th>成本</th></tr></thead>
+# <tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+# (A HTML identical for both strategies; facts identical for both strategies.)
+
+### 5.1 The two required record lines (verbatim from analyze() facts)
+[R2C1 source=c05] 行标题: ? | 列标题: 2026预算 > 收入 | 数值: 120
+[R2C2 source=c06] 行标题: ? | 列标题: 2026预算 > 成本 | 数值: 80
+Full handover text (3 lines, row-major):
+[R2C0 source=c04] 行标题: ? | 列标题: 产品 | 数值: A
+[R2C1 source=c05] 行标题: ? | 列标题: 2026预算 > 收入 | 数值: 120
+[R2C2 source=c06] 行标题: ? | 列标题: 2026预算 > 成本 | 数值: 80
+Row titles are '?' because this table's tbody has no th scope=row (§3.3:
+row titles come only from tbody th scope=row; the first column's data
+value 'A' must NOT be used as a row title — v1.0.1 erratum). Cell IDs:
+'产品' c00, '2026预算' c01, '收入' c02, '成本' c03, 'A' c04, '120' c05,
+'80' c06 (sorted by origin row, origin col, DOM order).
+facts JSON (verbatim):
+[{"row":2,"col":0,"cellId":"c04","rowHeaders":[],"colHeaders":["产品"],"headerStatus":"UNKNOWN","value":"A"},{"row":2,"col":1,"cellId":"c05","rowHeaders":[],"colHeaders":["2026预算","收入"],"headerStatus":"UNKNOWN","value":"120"},{"row":2,"col":2,"cellId":"c06","rowHeaders":[],"colHeaders":["2026预算","成本"],"headerStatus":"UNKNOWN","value":"80"}]
+
+### 5.2 Hash attribution — which hash is whose, and over which input bytes
+- aGraphSha256 = SHA-256 (hex lowercase) of the UTF-8 bytes of
+  canonicalCellGraph(gridA) — the canonical JSON { rows, cols, cells
+  (all fields), slotOwner } of the ORIGINAL table A (J-T005-4).
+  Input byte length: 879. Input (verbatim):
+  {"rows":3,"cols":3,"cells":[{"id":"c00","row":0,"col":0,"rowSpan":2,"colSpan":1,"role":"TH","scope":null,"text":"产品","section":"thead"},{"id":"c01","row":0,"col":1,"rowSpan":1,"colSpan":2,"role":"TH","scope":null,"text":"2026预算","section":"thead"},{"id":"c02","row":1,"col":1,"rowSpan":1,"colSpan":1,"role":"TH","scope":null,"text":"收入","section":"thead"},{"id":"c03","row":1,"col":2,"rowSpan":1,"colSpan":1,"role":"TH","scope":null,"text":"成本","section":"thead"},{"id":"c04","row":2,"col":0,"rowSpan":1,"colSpan":1,"role":"TD","scope":null,"text":"A","section":"tbody"},{"id":"c05","row":2,"col":1,"rowSpan":1,"colSpan":1,"role":"TD","scope":null,"text":"120","section":"tbody"},{"id":"c06","row":2,"col":2,"rowSpan":1,"colSpan":1,"role":"TD","scope":null,"text":"80","section":"tbody"}],"slotOwner":[["c00","c01","c01"],["c00","c02","c03"],["c04","c05","c06"]]}
+  Value (both strategies — A does not depend on strategy):
+  dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d
+  (equals T005's independently recorded value, T005-witness.txt §5/§6.)
+- bGraphSha256 (ORIGIN_EMPTY) = SHA-256 of canonicalCellGraph(gridB),
+  where gridB is rebuilt by independently re-parsing alternativeHtml
+  (the split table B) with T003 parse + grid — NOT copied from internal state.
+  B HTML (ORIGIN_EMPTY, source c01, splitCost 1, headerAssociationChanged true):
+  <table><thead><tr><th rowspan="2">产品</th><th>2026预算</th><th></th></tr><tr><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+  canonicalCellGraph(B) byte length: 985.
+  Recomputed bGraphSha256 = a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5 (match = true)
+  Value: a9ec182caf420715248a255286d2daef973a8e22719691db813dd05d88238bc5
+  (equals T005's value; differs from aGraphSha256, as required for A ≠ B.)
+- bGraphSha256 (REPEAT_VALUE) = same computation over the OTHER B table
+  (J-T005-1: split is per-strategy; J-T005-7: REPEAT_VALUE selects the
+  rowspan cell c00, not the colspan cell).
+  B HTML (REPEAT_VALUE, source c00, splitCost 1, headerAssociationChanged true):
+  <table><thead><tr><th>产品</th><th colspan="2">2026预算</th></tr><tr><th>产品</th><th>收入</th><th>成本</th></tr></thead><tbody><tr><td>A</td><td>120</td><td>80</td></tr></tbody></table>
+  canonicalCellGraph(B) byte length: 991.
+  Recomputed bGraphSha256 = ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1 (match = true)
+  Value: ba552bb47172087248e45ce9ad5d71a8c5a4435719c1faac360be665c17e1bd1
+- markdownSha256 = SHA-256 of the UTF-8 bytes of F_strategy(A) (flatten
+  output, trailing LF per J-T004-1). When certified, F(B) is byte-identical,
+  so the same hash identifies both Markdown texts.
+  ORIGIN_EMPTY: F(A) = "| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n"
+    (87 bytes) → 83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1
+  REPEAT_VALUE: F(A) = "| 产品 | 2026预算 | 2026预算 |\n| --- | --- | --- |\n| 产品 | 收入 | 成本 |\n| A | 120 | 80 |\n"
+    → e97edc1bda41731291466e2a64d0338df9abcf7b30f947ce1768592eba0bdffb
+  Both equal T005's independently recorded E1/E2 values (T005-witness.txt §5/§6).
+
+## 6. Evidence: analyze() full output summary for the §6.3 example
+### ORIGIN_EMPTY (no suppliedMarkdown)
+- schema = tablefork.report/v1; compare = NOT_SUPPLIED; witness = CERTIFIED_COLLISION
+- canonicalMarkdown = "| 产品 | 2026预算 |  |\n| --- | --- | --- |\n|  | 收入 | 成本 |\n| A | 120 | 80 |\n" (87 bytes, single trailing LF)
+- facts = 3 records (§5.1 above); all values strings ('120', '80' as strings)
+- proof: sourceCellId = c01, splitCost = 1, headerAssociationChanged = true,
+  aGraphSha256 = dbd4b9ce…157d, bGraphSha256 = a9ec182c…38bc5,
+  markdownSha256 = 83da5104…38c1; alternativeHtml = §5.2 ORIGIN_EMPTY B.
+  findWitness agrees on all three hashes (a = true, b = true, md = true).
+- warnings = ["3 个数据槽的标题未知（headerStatus=UNKNOWN），交接稿中写 ?，不得据此宣称业务归属。"]
+- JSON round-trip deep-equal = true; 'proof' in result = true.
+### REPEAT_VALUE (no suppliedMarkdown)
+- schema = tablefork.report/v1; compare = NOT_SUPPLIED; witness = CERTIFIED_COLLISION
+- canonicalMarkdown = "| 产品 | 2026预算 | 2026预算 |\n| --- | --- | --- |\n| 产品 | 收入 | 成本 |\n| A | 120 | 80 |\n"
+- facts = same 3 records as ORIGIN_EMPTY (facts do not depend on strategy)
+- proof: sourceCellId = c00, splitCost = 1, headerAssociationChanged = true,
+  aGraphSha256 = dbd4b9ce…157d (same A), bGraphSha256 = ba552bb4…1bd1,
+  markdownSha256 = e97edc1b…bffb; alternativeHtml = §5.2 REPEAT_VALUE B.
+  findWitness agrees on all three hashes (a = true, b = true, md = true).
+- warnings = same single unknown-header warning as ORIGIN_EMPTY.
+- JSON round-trip deep-equal = true; 'proof' in result = true.
+### Supplied-Markdown behaviour (analyze, §6.3 ORIGIN_EMPTY)
+- suppliedMarkdown = canonical F(A) → compare = EXACT_MATCH, warnings = 1
+  (only the unknown-header warning).
+- suppliedMarkdown = F(A) with '120' → '121' → compare = EXACT_DIFF,
+  warnings[0] contains 'EXACT_DIFF'; proof.markdownSha256 is still the
+  F(A) hash 83da5104…38c1 — the certificate applies to F(A) only, never to M.
+### Flat table (no merge) — proof omission
+- analyze() on <table><tbody><tr><td>a</td><td>b</td></tr></tbody></table>
+  (ORIGIN_EMPTY): witness = NO_WITNESS_FOUND, 'proof' in result = false,
+  warnings include the NO_WITNESS_FOUND "不表示表格保真" note, and
+  JSON round-trip keeps proof absent (still no 'proof' key).
+### WebCrypto vs node:crypto equivalence (run, not just asserted)
+Input (UTF-8 bytes) → WebCrypto == node:crypto (sha256Utf8):
+- len=0:    e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855, equal=true
+- len=3 ('abc'): ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad, equal=true
+- len=25 ('2026预算 > 收入：120'): 734565eb53053ed4c014c95765d4eb8de31fc9d735f4a551f4f4380d1d9fbb5f, equal=true
+- len=87 (F_ORIGIN_EMPTY(A)): 83da510440918640ba87eff47fa11cad70444955f6ce7e36724e4d26765338c1, equal=true
+- len=879 (canonicalCellGraph(A)): dbd4b9cebec9a13f40cfdff378c78d1f59325cdc0e721faa0b4068eb90de157d, equal=true
+The '' and 'abc' rows are known SHA-256 test vectors. analyze() itself
+re-hashes canonicalMarkdown and the A graph with WebCrypto on every
+certified call and throws on mismatch (no mismatch observed in any run here).
+### Invalid inputs (all throw, no result returned)
+- bad schema 'tablefork.input/v2' → TableForkInputError INVALID_RAGGED_GRID
+  ("analyze: schema must be \"tablefork.input/v1\", got \"tablefork.input/v2\"")
+- bad strategy 'NOPE' → TableForkInputError INVALID_RAGGED_GRID
+- nested table → TableForkInputError UNSUPPORTED_NESTED_TABLE
+  ("nested <table> is not supported (offset 15)")
+
+## 7. Judgement calls (spec does not pin these down; recorded for T011 / final review)
+J-T008-1 (witness 'UNSUPPORTED' is never produced by analyze): the task card
+  requires invalid input to throw a TableForkError, not to return a result.
+  witness.ts J-T005-3 said T008 would map thrown errors to witness
+  'UNSUPPORTED'; the card's throw-requirement takes precedence, so analyze()
+  lets parse/grid/findWitness errors propagate and 'UNSUPPORTED' is never
+  returned. The type still lists it (frozen §6.1); only the Worker/UI layer
+  (T010/T009) could map a thrown error to that status, if ever needed.
+J-T008-2 (analyze entry-validation error code): the frozen 7-code enum has
+  no INVALID_INPUT. Following parse.ts's precedent (non-string html and
+  "no <table>" both use INVALID_RAGGED_GRID as the catch-all bucket for
+  malformed input, with the message stating the true cause), analyze's own
+  schema/strategy/type checks throw code INVALID_RAGGED_GRID with messages
+  like `analyze: schema must be "tablefork.input/v1", got ...`. Upstream
+  parse/grid/compare errors keep their own codes (e.g. OVER_SIZE for an
+  over-long suppliedMarkdown, UNSUPPORTED_NESTED_TABLE for nested tables).
+J-T008-3 (proof field when absent): the field is OMITTED entirely from the
+  result object (no `proof: undefined` key). JSON.stringify drops undefined
+  anyway, so both spellings serialize identically; omission makes
+  `'proof' in result === false` an explicit, testable contract. Nailed down
+  here and in tests (certified → present; flat → absent before and after
+  JSON round-trip).
+J-T008-4 (SHARED_SOURCE_CELL has nowhere to live): §3.3 says a td spanning
+  slots with differing header paths must be flagged SHARED_SOURCE_CELL, but
+  the frozen §6.1 SlotFact has no such field and types.ts is frozen. The
+  per-slot records sharing one cellId already express the shared source
+  (tested: a rowspan=2 td yields two facts with the same cellId); no extra
+  field was invented. If T011/final review wants the flag, it needs a
+  spec change to SlotFact, not a silent extension here.
+J-T008-5 (hash implementation choice): records.ts computes no hash at all.
+  report.ts computes hashes only via WebCrypto (crypto.subtle.digest) —
+  never node:crypto — and verifies equivalence with witness.sha256Utf8 by
+  running both on the same inputs (§6 table: 5/5 equal, incl. known vectors
+  and the 879-byte A graph). analyze() additionally cross-checks the
+  WebCrypto re-hash of canonicalMarkdown and the A graph against the
+  proof's hashes on every certified call. TextEncoder and node 'utf8'
+  agree on lone surrogates (both U+FFFD), so the equivalence is exact.
+J-T008-6 (values stay strings): buildSlotFacts copies grid cell text
+  verbatim; no Number() / parseInt / JSON-number path exists in records.ts
+  or report.ts. Tested with the 17-digit string '12345678901234567':
+  value stays exactly that string (Number() would give 12345678901234568).
+  splitCost stays a JSON number (it is a structural integer, not cell data).
+J-T008-7 (warnings are fixed-order and deterministic): EXACT_DIFF note,
+  then NO_WITNESS_FOUND note, then unknown-header count note; no timestamps,
+  no randomness. An EXACT_MATCH + certified + all-known-headers result
+  would carry warnings = [].
+Consistency with J-T004-1 (trailing LF): canonicalMarkdown ends with a
+  single LF (flattenGrid output used verbatim); compareMarkdown treats a
+  missing/extra trailing LF as a byte difference, and analyze passes the
+  flatten output straight through — no trimming, no re-joining — so the
+  §6.3 markdown hash (83da5104… / e97edc1b…) matches T004/T005 exactly.
+
+## 8. Issues / open problems (reported honestly, not hidden)
+1. witness.ts still uses node:crypto (line 84: `import { createHash } from
+   'node:crypto';`) while the public browser kernel (§6.2) must have no
+   Node-only calls. `npm run build` passes TODAY (exit 0, §1) ONLY because
+   witness.ts is not yet in the bundle graph: index.ts mounts nothing until
+   T013, src/main.tsx imports no core module, and no file outside src/core
+   imports witness/records/report (grep verified; src/worker/protocol.ts
+   imports only types from core, src/io/localText.ts imports only index +
+   parse). report.ts imports findWitness/canonicalCellGraph/sha256Utf8 from
+   witness.ts, so the moment T013 mounts report.ts (or witness.ts) into
+   index.ts, the browser bundle WILL break on node:crypto unless the hash
+   is first swapped for the browser-safe implementation. This card's
+   sha256Utf8WebCrypto (report.ts) is the ready replacement: same values
+   on the same inputs (§6, 5/5 equal). T013 MUST swap witness.ts's hash
+   before mounting; do not mount first and debug later.
+2. 'UNSUPPORTED' witness status is unreachable from analyze() (J-T008-1).
+   If T009/T010 need a non-throwing report path for unsupported input, that
+   is a new decision for the coordinator, not a silent change here.
+3. SHARED_SOURCE_CELL flag not emitted (J-T008-4): needs a SlotFact spec
+   change if wanted; per-slot shared cellId is the current expression.
+4. No performance measurement in this card (p95 ≤ 500ms is a T012 concern);
+   analyze() adds one WebCrypto digest (async) plus findWitness's internal
+   re-parse per call — small, but not benchmarked here. NOT_RUN for p95.
+5. tests/property does not exist yet; the 48 Golden fixtures do not exist
+   yet (both T011). This card's 17 tests are temporary local tests only.
+
+## 9. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): src/core/records.ts + src/core/report.ts
+  + tests/core/t008-temp.test.ts + this log file.
+- Step 2 (handoff commit): task_handoffs/P029-T008.json only.
+- Real SHAs are recorded in task_handoffs/P029-T008.json (result_commit =
+  step-1 SHA) and in the final report.

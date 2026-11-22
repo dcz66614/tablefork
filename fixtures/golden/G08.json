@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G08",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th>列A</th><th>列B</th></tr></thead><tbody><tr><th>伪行头</th><td>9</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G08"
+}

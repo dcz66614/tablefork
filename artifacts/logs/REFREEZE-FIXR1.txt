@@ -1,0 +1,146 @@
+P029 TableFork — REFREEZE-FIXR1 验收日志
+======================================
+目的：把 FIX-01～FIX-04 的修复重新冻结成新发布包，为终审 R2 做准备。
+规格 v1.0.2；基线提交 6c81860（P029-FIX-04 handoff 提交，即冻结前的最新代码状态）。
+打包时 HEAD（packaged_from_head）：b7e102350b5decef63478eb8200fe0f6f1654bef（提交 B）。
+冻结提交（result_commit）：见 task_handoffs/P029-REFREEZE.json。
+方法：按 artifacts/logs/T013-release.txt 与 scripts/verify_release.mjs 的口径重做；
+REVIEW_PACK/REVIEW_INDEX 由 /tmp/refreeze-package.mjs 生成，清单与 ZIP 由
+/tmp/refreeze-manifest.mjs 生成（均调用 verify_release.mjs 的导出函数）。
+生成器副本另存于 ~/workspace/p029-refreeze-generator.mjs 备查（不提交）。
+
+提交拓扑（沿用 FIX-01 的三提交先例，不 amend）
+-----------------------------------------------
+A f9279e0290acf49aad3281d908bb4d0b6fac2aaa
+  P029-REFREEZE: re-base release on FIX-04 freeze 6c81860 (spec v1.0.2)
+  仅改 scripts/verify_release.mjs 的 BASE_COMMIT（4025061 -> 6c81860）。
+B b7e102350b5decef63478eb8200fe0f6f1654bef
+  P029-REFREEZE: regenerated review packs/index/screenshots for spec v1.0.2
+  新 REVIEW_PACK_01..05、REVIEW_INDEX、SCREENSHOT_INDEX、11 张重拍截图。
+C （本提交）P029-REFREEZE: FIX-R1 release (P1-01 + P1-02 + NBSP + vtab), spec v1.0.2
+  新 RELEASE_MANIFEST、两 ZIP、本日志。
+
+base_commit 取值说明（与任务字面要求的偏差，请协调员裁决）
+----------------------------------------------------------------
+任务要求 base_commit = 新冻结提交的短哈希；该值在数学上不可实现：
+清单（含 base_commit）与脚本（含 BASE_COMMIT）都在冻结提交的树内，
+冻结提交的 SHA 依赖树内容，构成定点问题，无法通过搜索解出。
+故取 Flow Y：base_commit = 6c81860（FIX-04 handoff 提交，冻结前的最新代码状态；
+也是 T013 语义下“工作开始时的基线提交”：T013 的 base_commit 4025061 就是
+T013 开工前的 HEAD）。ZIP 文件名随之取 tablefork-source-6c81860.zip /
+tablefork-dist-6c81860.zip。若要换值，只需改一行 + 重新打包。
+
+生成器验证（R1 复现，逐字节一致）
+----------------------------------
+先在 ~/workspace/.tmp-p029-r1-copy/（git archive f53cef4 的干净副本，删去打包后才
+入树的 artifacts/logs/T013-FIX-01.txt 与 task_handoffs/P029-T013.json 以复现打包时
+工作区）以 R1 参数跑生成器；初版发现并修正三处偏差后，5 卷 + 索引与已提交 R1 版
+逐字节一致：
+ 1. 卷头与索引头写“（规格 1.0.1）”，漏了 v —— 改为“规格 v${SPEC}”。
+ 2. 块顺序与代码表须用字节序（plain .sort()），不是 localeCompare：
+    localeCompare 把 src/ui/presets.ts 排在 ProofPanel.tsx 之前，R1 版是反过来的。
+    非代码表仍用 localeCompare（fixtures/golden 在 fixtures/TFK-* 之前）。
+ 3. 索引的非代码表里 REVIEW_PACK_0x 行须用刚生成的文件的哈希/字节数，
+    不能沿用生成前扫描到的旧值（FIX-01 的 NOTE-GENERATOR-BUG-FIXED 同类问题）。
+
+全量验收（2026-11-21 约 11:41 GMT 重跑；TMPDIR=./.tmp-tmpdir，
+NODE_COMPILE_CACHE=$HOME/.node-compile-cache-p029；代码自 FIX-04 后未动）
+--------------------------------------------------------------------------------
+npm run typecheck        exit 0
+npm run test:core        exit 0 — 745/745（11 文件；tests/core 10 + tests/property 1）
+npm run oracle           exit 0 — 49/49 passed（0 failed，含 G49）
+npm run test:e2e          exit 0 — 22 passed（26.7s）
+npm run test:e2e:perf     exit 0 — 1 passed（12.0s）
+npm run build            exit 0 — 48 模块；Worker chunk
+                         dist/assets/tablefork.worker-CnACUpDX.js（与 FIX-04 一致）
+npm run verify:release   exit 0 — RESULT: PASS（0 failing checks；见下）
+
+verify:release（提交前，HEAD=B）：
+  manifest 192 文件；source ZIP 字节数+SHA 与清单一致；ZIP 条目 == 清单文件 192；
+  ZIP 内容与清单哈希 192/192；清单哈希与 git HEAD blob 一致 192，0 修改；
+  fresh git archive HEAD 与 source ZIP 内容逐文件一致 192/192；
+  dist ZIP 与全新构建逐字节一致（98,874 B，同一 SHA）；
+  REVIEW_PACK 5/5 与清单一致；代码文本文件 50/50 各入一卷；索引分卷表一致。
+  唯一 WARN：.tmp-tmpdir 内 6 个打包临时文件（dzip.py/list.txt）在清单之后产生，
+  不在本次冻结内；提交前已清空。
+
+新冻结文件集：192 文件（R1 为 174；新增 18，删除 0）
+  新增：artifacts/logs/FIX-01.txt、FIX-02.txt、FIX-03.txt、FIX-04.txt、
+  T013-FIX-01.txt、T014-review.txt、drive-archive-f53cef4.json；
+  fixtures/golden/G49.json；review/FINAL_REVIEW_R1_MESSAGE_DRAFT.md、
+  review/INDEPENDENT_REVIEW.md；task_handoffs/P029-FIX-01..04.json、
+  P029-T013-FIX-01.json、P029-T013.json、P029-T014.json；tests/core/nbsp.test.ts。
+  代码文本文件 50（PACK_01 11、PACK_02 15、PACK_03 10、PACK_04 7、PACK_05 7）。
+
+ZIP（确定性打包：条目按路径排序、时间戳 1980-01-01、deflate 等级 9；
+source ZIP 打包两次逐字节相同）
+  tablefork-source-6c81860.zip  3,740,523 B
+    sha256 3d023f3b50a12173311ed82763350074f8d6b71a542f7bca21043949f370de27
+  tablefork-dist-6c81860.zip    98,874 B
+    sha256 e0a2ce5e39e69981d7cdec406cd7c1e0a7585bd20eaef18e16f58473c89d5602
+    （4 文件：index.html、assets/index-DWbnUfvs.js、assets/index-JnfH-Ufr.css、
+    assets/tablefork.worker-CnACUpDX.js）
+旧 ZIP（tablefork-source/dist-4025061.zip）已从 artifacts/release/ 删除。
+
+性能与取消探测（2026-11-21 约 11:41 GMT 新跑）
+  T012-perf-browser.json：n=30，min 163.6，p50 223.5，p95 325.2，max 343.2ms，
+  target p95 ≤500ms，pass=true。
+  T012-cancel-probe.json：3/3 clicked=true（57ms、14ms、21ms）。
+  两文件为 VOLATILE_RUN_OUTPUTS，e2e 后已用 git checkout 恢复，提交内不含写脏内容。
+
+截图（13 张；11 张重拍，2 张保留）
+----------------------------------
+重拍 11 张（顶栏“规格 v1.0.1”→“规格 v1.0.2”）：
+  T009 六张用 Playwright 脚本重拍（vite preview 生产构建，127.0.0.1:4173，
+  与 T009/T012 同口径，fullPage）；T012 五张由 npm run test:e2e 重拍。
+  每张与旧图逐像素比对，差异仅限版本字形（桌面 48 像素，移动端 49 像素）。
+  交叉验证：新 T009-desktop-A 与新 T012-A-origin-empty 哈希相同；
+  新 T009-mobile390-A 与新 T012-mobile390-A 哈希相同；
+  新 T012-C-no-witness 与首版 T009-C 重拍哈希相同。
+  新图 SHA-256 与字节数见 review/SCREENSHOT_INDEX.md。
+保留原图 2 张：T012-perf-fail.png、T012-perf-fail-run2.png
+  （逐字节相同，145,408 B）。画面是 1280x720 视口截图（输入区，无顶栏、无版本
+  字样），内容不受 FIX-01～04 影响；它们是 T012 历史失败证据，无法也不应重拍
+  （重现需要复刻已被隔离法闭合的测量污染失败）。
+
+重拍中发现并修正的三处原记录错误（均以图像为实证）
+------------------------------------------------------
+ 1. T009-mismatch-A 的 M 编辑：原索引写“M 改 120→81”不准；图中 M 末行是
+    | A | 120 | 81 |，F(A) 是 | A | 120 | 80 |，首个不同字节下标 83。
+    实际编辑是末值 80→81。e2e 测试用的 | A | 81 | 80 | 是另一种编辑，
+    不能用于重拍 T009 图。已按 120 | 81 重拍，比对仅剩顶栏 48 像素。
+ 2. T009-keyboard-focus 并非“分析后”：图中输入为空（<table>…</table> 占位、
+    0 字符、“请先选择预设或粘贴 HTML。”）。真实步骤是全新空页 + 页顶 Tab 22 次；
+    焦点落在 ORIGIN_EMPTY 单选框（焦点色 #d35400 像素定位：x 51–73，y 579–601）。
+    22 次 Tab 序列：12 个不同焦点元素，与 T009 日志一致。
+ 3. C/D 图含“已下载 JSON 报告。”提示语：T009 会话流程是先下载 JSON 再截图，
+    提示语跨预设保留（ExportPanel 的 copyMsg 状态不随新分析清除）。
+    D 的结果为 null（UNSUPPORTED 时 App 传 result=null），须用同一会话先分析
+    TFK-A 并下载，再切 TFK-D 分析截图才复现。另：下载按钮点击后鼠标悬停会使
+    边框变蓝，截图前须把鼠标移开（如 page.mouse.move(10,10)）才能与原图一致。
+
+清单 notes 说明
+--------------
+notes 由 scripts/verify_release.mjs 新导出的 buildManifestNotes() 生成，未手写。
+模板第一句“（T013 的 base_commit）”字样：base 改为 6c81860 后，该括号按
+“base_commit 字段（T013 确立）”理解才成立。
+模板渲染“（0 个文件）”：指打包时机械重生成的文件数为 0 —— ZIP 内容 = B 的树 +
+0 个重生成文件 = 冻结提交 B 的树（按源文件计），是真话，措辞略别扭，系模板限制。
+
+本轮遇到的两个环境坑（供下次冻结参考）
+--------------------------------------
+ 1. Node 24 的模块编译缓存：NODE_COMPILE_CACHE=0 不禁用缓存，而是把缓存目录
+    当成字面相对路径 “0”——会在仓库根目录造出 0/node-compile-cache/（141 文件），
+    被 computeSourceSet 扫进冻结集。正确做法：把 NODE_COMPILE_CACHE 指到仓库外
+    的持久目录（如 $HOME/.node-compile-cache-p029），并在每次扫描前清空 .tmp-tmpdir。
+    （第一次打包因此扫出 320/325 文件、写 ZIP 失败：artifacts/release/ 在 git rm
+    旧 ZIP 后消失，dzip.py 打不开输出路径；已修：打包脚本先 mkdir -p。）
+ 2. vitest 会把 .tmp-tmpdir 里的解包副本也当测试跑：verify:release 在 .tmp-tmpdir
+    下解包出的 tablefork-arc-*/tablefork-src-ex-* 含 tests/core 副本，
+    随后 npm run test:core 会跑成 33 文件 / 2235 测试（= 745×3）。清理 .tmp-tmpdir
+    后重跑恢复规范值 745/745（11 文件）。验收数以清理后重跑为准。
+
+全新克隆验证
+------------
+在冻结提交后进行（file:// 克隆到持久磁盘临时目录，完整跑一遍验收命令），
+结果见 task_handoffs/P029-REFREEZE.json。

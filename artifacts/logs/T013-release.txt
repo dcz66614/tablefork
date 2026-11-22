@@ -1,0 +1,153 @@
+# P029-T013 — 合规、说明、哈希冻结与终审包：验收日志
+# 任务：P029-T013（最后一张施工卡）　规格 v1.0.1　基线 4025061
+# 执行时间：2026-11-21 ~04:16–04:45 GMT　环境：Linux x64，Node v24.22.1，
+#   npm 10.9.4，Python 3.12.3，Chromium 159.0.8154.6，共享 VM（1.5 vCPU）
+# 本日志记录全部验收命令的真实退出码、ZIP 字节数与 SHA-256、HEAD 与关键核对结果。
+# 未经修饰：含一次 p95 超标的离群运行（§5），如实记录并分析，不删改。
+
+## §1. 基线与 HEAD
+# - base_commit：402506161691bf1a7334fd09d36964aae8915d3d（短 SHA 4025061）
+# - package-lock.json SHA-256：80a86c951542fc09006c2f7e44f8686bf03f561935fbfe2e34b72e9e05d7974f
+#   （与 T001 冻结值一致，`npm ci` 未改动 lockfile；未跑 plain `npm install`）
+# - T012-performance.json 六组旧数据未改写（git diff 为空，本日志 §5）。
+
+## §2. 三处允许改动（除此之外 core/Oracle/UI/Golden 全部冻结）
+# (a) src/core/index.ts 挂载：一次性 re-export 全部核心模块
+#     （types/parse/grid/headers/flatten/witness/compare/records/report/sha256
+#     + Worker 协议）。去重口径：sha256Utf8 只从 ./sha256 出口一次，
+#     isTableForkError 只从 ./types 出口一次（witness.ts 与 report.ts 只是
+#     re-export 同一实现，多处导出会歧义）；其余导出名无冲突，全数挂载。
+#     挂载后 typecheck + build + 全测试全绿（§3）。
+# (b) UI 接 Worker（ISSUE-T010-1）：App.tsx 改走全项目唯一 Worker
+#     （src/worker/tablefork.worker.ts，`new Worker(new URL(...), {type:'module'})`），
+#     主线程 jobId 采纳 + 取消按钮（向 Worker 发 CANCEL + 序列号递增双重守卫）。
+#     Worker 创建失败时 fail-closed 报错，绝不悄悄回落主线程同步 analyze()。
+#     构建产物含独立 Worker chunk：dist/assets/tablefork.worker-CSdEShYO.js（25.23 kB）。
+#     接线后重跑全部浏览器检查：功能 e2e 20 条 + 隔离性能 1 条 + T009 截图/浏览器核对
+#     （截图未变：T012 截图与 T009 哈希一致的 Deterministic 渲染说明见 SCREENSHOT_INDEX.md）。
+# (c) tsconfig 包含 cli/：include 加 "cli"，`npm run typecheck` 直接覆盖
+#     cli/analyze.ts，一次通过，无构建问题；未用 verify 内独立 tsc 检查的备用方案。
+#     （cli/analyze.ts 文件头原注“不在 include 里”已过期，但按冻结规则不改该文件，
+#     只在此记录：以 tsconfig.json 为准。）
+# 另：.gitignore 加一行 `!artifacts/release/*.zip`（在 `*.zip` 之后），使本次
+#   两个发布 ZIP 能正常提交；不是产品代码改动，见 §8。
+
+## §3. 八条验收命令（按顺序，全部真实跑）
+# 1. npm ci — exit 0（added 101 packages；lockfile 未变）
+# 2. npm run typecheck — exit 0（含 cli/）
+# 3. npm test — exit 0，719/719（10 文件；接管后不减反：临时测试已接管，见 §7）
+# 4. npm run oracle — exit 0，48/48 passed（0 failed）
+# 5. npm run build — exit 0（48 模块；dist 4 文件；Worker chunk 见 §2(b)）
+# 6. npm run test:e2e — exit 0，20 passed（37.3s，功能项目）
+# 7. npm run test:e2e:perf — 见 §5（隔离 p95；一次离群超标 + 两次重跑通过）
+# 8. npm run verify:release — exit 0，RESULT: PASS（0 failing checks）
+#    （验收序列中第 8 条首次跑时因 e2e/perf 改写了两个日志文件、清单过期而
+#    FAIL 1 项，属打包时序问题；重新打包后终版 verify exit 0，检查项见 §6。）
+
+## §4. ISSUE-T012-2 重测：取消按钮是否可达（真实浏览器，T013 接线后）
+# 结论：CLOSED——取消按钮可达、可点击、可取消旧任务。
+# 证据：tests/e2e/tablefork.e2e.ts 的 cancel/race 测试内嵌探测（页内每 1ms
+#   轮询“取消”按钮，32×12 性能表分析期间），artifacts/logs/T012-cancel-probe.json：
+# - 本卡首次 e2e 运行：3/3 clicked=true（8ms、19ms、34ms）。
+# - 验收序列 e2e 运行：3/3 clicked=true（108ms、122ms、201ms；机器负载高，
+#   分析本身更慢，按钮可见窗口更长）。
+# 对照：T012 时 3/3 clicked=false（每次 ~3.1–3.2s 超时），因 analyze() 全程
+#   同步、React 批量合并使 ANALYZING 状态永不绘制。接线后 Worker 的
+#   macrotask 让步使主线程空闲、React 得以绘制取消按钮。
+# 竞态守卫仍成立：同一测试前半段 TFK-A→TFK-C 切换后最终为 NO_WITNESS_FOUND，
+#   无 CERTIFIED 残留；取消后比较按钮回到可用，随后 TFK-A 全新分析正常出结果。
+
+## §5. 隔离性能 p95（32×12 表，30 次，目标 ≤500ms；T012-performance.json 六组旧数据未动）
+# 方法：与 T012-FIX-01 相同的隔离串行项目（`npm run test:e2e:perf`，单 worker，
+#   与功能测试永不同时执行）。本卡接线后的四次隔离测量：
+# - 2026-11-21 ~04:22（本卡首次）：p95 286.0ms（n=30，min 171.1，p50 208.9，max 390.2）PASS。
+# - 2026-11-21 ~04:31（验收序列内）：p95 515.9ms（n=30，min 161.7，p50 378.1，max 732.6）FAIL。
+#   30 个原始值未保留：perf 测试每次运行覆盖同一文件 artifacts/logs/T012-perf-browser.json，
+#   统计量（p50/p95/min/max）已记录如上。离群分析：同一代码、同一接线，
+#   p50 从 ~209ms 翻倍到 378.1ms，且同期 e2e 全套耗时从 27.9s 涨到 37.3s、
+#   取消探测耗时从 8–34ms 涨到 108–201ms——整机同时变慢，是共享 VM 的 CPU
+#   争用（当时 load average 3.87，1.5 共享 vCPU），不是产品回归；代码在
+#   两次运行之间一字未动。不改阈值、不改数据、不碰产品代码，按同一方法重跑。
+# - 2026-11-21 ~04:33（重跑 1）：p95 373.8ms（n=30，min 172.8，p50 206.7，max 413.5）PASS。
+# - 2026-11-21 ~04:33（重跑 2）：p95 312.7ms（n=30，min 181.0，p50 224.5，max 322.8）PASS。
+# 结论：接线后隔离 p95 在 286–374ms 区间（余量约 1.3–1.7 倍），Worker 跳转
+#   成本约 +30ms（对比接线前隔离 257.5ms）；515.9ms 为负载离群值，已如实
+#   记录，不构成 RELEASE_BLOCKED（无冻结代码需要改、无阈值/数据被改）。
+#   当前 artifacts/logs/T012-perf-browser.json 为重跑 2 的结果（p95 312.7ms）。
+
+## §6. 发布包与清单（verify:release 终版，exit 0）
+# - 源码 ZIP：artifacts/release/tablefork-source-4025061.zip
+#   字节数 3640623，SHA-256 79f9913489ec97ce8e84fff24d76a8716f45a06f5f23fcd173bbe12814c0cb23
+#   （文件名短 SHA 为基线 4025061；冻结发布提交见 task_handoffs/P029-T013.json）
+# - 构建 ZIP：artifacts/release/tablefork-dist-4025061.zip
+#   字节数 98684，SHA-256 af8f43a9af25baeb4a3d51a34c0eb76e6b926faeca7d9b587f7367e4eb7044b1
+#   （dist/ 4 文件；verify 内全新 `npm run build` + 确定性重打逐字节一致）
+# - 清单：review/RELEASE_MANIFEST.json，174 个文件，逐文件 SHA-256 + 字节数；
+#   其中 155 个与 git HEAD blob 一致，6 个为 T013 合法修改（worktree 核对），
+#   14 个为提交前新文件（worktree 核对；提交后重跑见 §9）。
+# - REVIEW_PACK：5 卷，49 个代码文本文件（core 11、UI/Worker/IO/CLI 15、
+#   tests/core 9、property+e2e 7、Oracle+配置+发布脚本 7），每卷每块 SHA-256
+#   与清单一致；REVIEW_INDEX.md 分卷表一致。
+# - verify 检查项（终版，全部 PASS）：清单 schema/spec/base、清单覆盖 174/174、
+#   清单哈希与工作区 174/174、源码 ZIP 条目 174 == 清单、解包重算 174/174、
+#   HEAD blob 比对、dist ZIP 与全新构建逐字节一致、dist 条目 4 == 全新 dist/、
+#   5 卷哈希、49/49 代码文件恰好一卷、REVIEW_INDEX 分卷表。
+#   （提交前“新鲜 git archive 比对”一项 SKIP：14 个新文件尚未入 HEAD；提交后重跑见 §9。）
+# - 自指排除（见清单 excluded_from_source_zip）：artifacts/release/*.zip、
+#   review/RELEASE_MANIFEST.json、artifacts/logs/T013-release.txt 不装入源码 ZIP；
+#   其余排除见 scripts/verify_release.mjs 文件头。
+# - 第三方许可证：THIRD_PARTY_NOTICES.md 由 package.json + package-lock.json
+#   逐项核对 node_modules 各包 package.json 的 license 字段与包内 LICENSE 文件生成：
+#   已安装 101 包（MIT 87、Apache-2.0 6、ISC 6、CC-BY-4.0 1、BSD-3-Clause 1）；
+#   50 个可选平台原生包在 linux-x64 未安装、未进产物，逐项列出未断言其许可证。
+
+## §7. 临时测试接管
+# - grep 全仓 TEMPORARY：仅 tests/core/t011fix01-temp.test.ts 一处（其余命中
+#   在 COORDINATOR_LOG.md 的历史记录中，不是测试文件）。
+# - 已接管为正式测试 tests/core/report-facts.test.ts（按 T011 接管惯例用模块名
+#   命名：grid/report 等；头注去 TEMPORARY 标记，内容一字未改，5 条测试不变）。
+# - 总测试数：接管前后均为 719/719（10 文件），只增不减（本次无新增测试）。
+
+## §8. 其他记录
+# - README.md：30 秒 demo 用真实 CLI 输出（TFK-A：CERTIFIED_COLLISION，
+#   aGraph dbd4b9ce…157d、bGraph a9ec182c…38bc5、markdown 83da5104…38c1，
+#   sourceCellId c01、splitCost 1、headerAssociationChanged true；交接稿 3 行
+#   与 §6.3 一致）；诚实边界：只证明结构歧义，不证明表格保真。
+# - LICENSE：MIT（Copyright (c) 2026 TableFork Contributors）。
+# - CHANGELOG.md：v1.0.0 发布说明（对应规格 v1.0.1）。
+# - SECURITY.md：本地离线、无网络、无模型调用；漏洞报告方式（仓库 Issue，
+#   不贴真实文档/凭证）；WINDOWS_NOT_TESTED。
+# - SCREENSHOT_INDEX.md：13 张截图逐一映射到输入/策略/预期结果（含两张
+#   性能失败截图，T012 测量污染证据）；tests/e2e/ 下无截图文件。
+# - 未改动：bundle/、drive-copies/、v1.0.0-archive/、S0_REPORT.md、
+#   COORDINATOR_LOG.md、规格文件、T012-performance.json、test-results/。
+# - .gitignore 唯一改动：加 `!artifacts/release/*.zip`（见 §2 末）。
+
+## §9. 提交后复核（提交 1 之后补记）
+# - 提交 1（初版）：79410a500df2e284650ec40e285c64f69569ef65（24 文件）。
+# - 提交后 `npm run verify:release` 重跑：174/174 与 HEAD blob 一致，
+#   0 修改、0 未入 HEAD；但 1 项 FAIL——“新鲜 git archive 比对”：
+#   174/174 文件内容一致，条目列表差 20 个目录条目（git archive 会写
+#   `artifacts/`、`src/core/` 等目录条目，确定性 ZIP 只含文件条目）。
+#   根因是 verify 脚本的比对未排除目录条目（脚本 bug，非发布包问题），
+#   已修复脚本并重新打包（见下）。
+# - 提交后全新 clone（file://，HEAD 79410a5）：npm ci exit 0、
+#   npm run build exit 0、npm test 719/719 exit 0；clone 内 verify
+#   同样只失败上述同一项（目录条目），其余全过。
+# - 修复后重新打包：源码 ZIP 变为 3640623 字节、
+#   SHA-256 79f9913489ec97ce…（见 §6 终版数字以本次打包为准——注意：
+#   本日志 §6 的 ZIP 数字在重新打包后已同步更新为终版；初版 ZIP
+#   3640430 B / 0717022a… 仅为中间值，见本节记录）。
+#   修复后 verify（提交前状态，HEAD 仍为 79410a5）：除 archive 比对
+#   一项外全 PASS；archive 比对报 3 文件内容不同
+#   （REVIEW_INDEX.md、REVIEW_PACK_05.md、scripts/verify_release.mjs），
+#   属预期：这 3 个文件是修复后新生成的，HEAD 里的还是旧版；并入
+#   提交 1（amend）后 HEAD 即与清单一致。
+# - 提交 1（amend 后终版）SHA 与提交后最终复核（verify + 全新 clone）
+#   见 task_handoffs/P029-T013.json；amend 只改动：修复后的
+#   scripts/verify_release.mjs、重新生成的 REVIEW_PACK_05.md、
+#   REVIEW_INDEX.md、RELEASE_MANIFEST.json、源码 ZIP 与本日志 §9，
+#   其余 19 个文件一字未动；dist ZIP 字节与 SHA-256 全程不变
+#   （af8f43a9…，三次打包一致）。
+# - MEMORY.md 在本卡执行期间被另一对话更新（Investment Thinkers
+#   BATCH-059），与本卡无关，未碰。

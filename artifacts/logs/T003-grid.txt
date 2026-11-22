@@ -1,0 +1,271 @@
+# P029-T003 grid evidence log
+# Generated: 2026-11-21T00:25Z (UTC) — all values below are from real commands run on this VM.
+# Spec version: 1.0.1. Base commit: 814ccca (P029-T002 handoff; product 6a3c1f2).
+# Working path: /home/hatch/workspace/p029-tablefork
+# Task: P029-T003 表格解析、覆盖网格、明示标题 — parse.ts / grid.ts / headers.ts
+#        + temporary local tests (T003 TEMPORARY, to be taken over by T011).
+
+## 1. Acceptance commands (real output, run in /home/hatch/workspace/p029-tablefork)
+- npm run typecheck (tsc --noEmit): exit 0
+- npm run test:core (vitest run tests/core tests/property, vitest 4.1.12): exit 0
+  - Test Files: 1 passed (1) — tests/core/t003-temp.test.ts only.
+  - Tests: 67 passed (67), 0 failed. Duration 520ms (tests 38ms).
+  - NOTE: tests/property does not exist yet (T011 scope); vitest runs the
+    tests/core filter and exits 0. No property tests exist or are claimed.
+- No external model API called; no Qoder; no password/key files touched.
+- git status at log time: only the new T003 files are untracked
+  (src/core/parse.ts, src/core/grid.ts, src/core/headers.ts, tests/);
+  S0_REPORT.md and COORDINATOR_LOG.md remain untouched untracked coordinator files.
+
+## 2. Files produced by this task (only these)
+- src/core/parse.ts (new)
+- src/core/grid.ts (new)
+- src/core/headers.ts (new)
+- tests/core/t003-temp.test.ts (new; header-marked T003 TEMPORARY — to be taken over by T011)
+- artifacts/logs/T003-grid.txt (this file)
+- task_handoffs/P029-T003.json (second commit, see §7)
+NOT modified (per the card): src/core/types.ts, src/core/index.ts,
+src/worker/protocol.ts, oracle/*, src/ui/*, src/main.tsx, package.json,
+package-lock.json, docs/, bundle/, drive-copies/, v1.0.0-archive/,
+S0_REPORT.md, COORDINATOR_LOG.md. src/core/index.ts mounting is left to T013
+as instructed; the new modules are imported directly by relative path in tests.
+
+## 3. SHA-256 of the produced source files (sha256sum, real output)
+- 5088ae059e1915bf1aac79e502c36c2bcb853c62c00d6336e5871db8cfd462c4  src/core/parse.ts
+- 5749ba30adb4b5448fe582a2e75c646e5af31351e1cd3214714283a7a783206a  src/core/grid.ts
+- 6107c56a98d2a90182b4f537edb2baa88187f24cfd8375f118aa802c2d2f9417  src/core/headers.ts
+- dd5f6908229cab97c7cd1eb52156c615a4bfa988d06985c76be8a945bb26e932  tests/core/t003-temp.test.ts
+(Git result_commit SHA is recorded in task_handoffs/P029-T003.json, not here,
+to avoid self-reference: this log is part of the step-1 commit.)
+
+## 4. Implemented functions (public API)
+parse.ts:
+- parseValidatedTable(html: string, options?: { signal?: AbortSignal }): ParsedTable
+  Single top-level <table> only; tags restricted to table/thead/tbody/tr/th/td/
+  caption + pure text in cells; hand-written deterministic tokenizer (no DOMParser,
+  no jsdom, no new dependency). Throws TableForkInputError (Error subclass,
+  { code: ErrorCode, message: string }, recognised by T002 isTableForkError()).
+- decodeEntities(raw: string): string — ';'-terminated refs only; named table +
+  decimal/hex numeric refs; unknown names / illegal code points stay literal.
+- normalizeCellText(raw: string): string — decode, fold consecutive ASCII
+  whitespace to one U+0020, trim. Interior single U+00A0 is preserved.
+- ParsedTable / ParsedRow / ParsedCell types; ParseOptions; TableForkInputError
+  class + fail(code, message) helper (reused by grid.ts).
+grid.ts:
+- buildGrid(parsed: ParsedTable): GridResult
+  First-free-column placement per §3.2; validates section containment, overlap,
+  ragged coverage; assigns cellIds c00, c01, … sorted by (origin row, origin col,
+  DOM order). GridResult { cells: Cell[], slotOwner: string[][], rows, cols }.
+headers.ts:
+- buildHeaderPaths(grid: GridResult): SlotHeaderPaths[][]
+  Per-slot row/col header paths per §3.3; thead th (top-to-bottom, dedup by cellId)
+  for columns; tbody th scope="row" only (left-to-right, dedup by cellId, rowspan
+  continuation reuses the same source cell once) for rows.
+- headerStatusFor(rowHeaders, colHeaders): HeaderStatus — KNOWN only when both
+  paths are non-empty, else UNKNOWN. SlotHeaderPaths type.
+All three modules import the frozen contract from './index' (T002 convention);
+no type in types.ts / index.ts / protocol.ts was changed.
+
+## 5. Four base sample grid matrices (real output, `npx tsx /tmp/t003-matrices.ts`, exit 0)
+--- S1 PROJECT_BOOK §6.3 worked example (3x3) ---
+slotOwner:
+  ["c00","c01","c01"]
+  ["c00","c02","c03"]
+  ["c04","c05","c06"]
+cells:
+  c00 (0,0) 2x1 TH scope=null section=thead text="产品"
+  c01 (0,1) 1x2 TH scope=null section=thead text="2026预算"
+  c02 (1,1) 1x1 TH scope=null section=thead text="收入"
+  c03 (1,2) 1x1 TH scope=null section=thead text="成本"
+  c04 (2,0) 1x1 TD scope=null section=tbody text="A"
+  c05 (2,1) 1x1 TD scope=null section=tbody text="120"
+  c06 (2,2) 1x1 TD scope=null section=tbody text="80"
+header paths (slot -> rowHeaders | colHeaders | status):
+  (0,0) row=[] col=[产品] UNKNOWN
+  (0,1) row=[] col=[2026预算 > 收入] UNKNOWN
+  (0,2) row=[] col=[2026预算 > 成本] UNKNOWN
+  (1,0) row=[] col=[产品] UNKNOWN
+  (1,1) row=[] col=[2026预算 > 收入] UNKNOWN
+  (1,2) row=[] col=[2026预算 > 成本] UNKNOWN
+  (2,0) row=[] col=[产品] UNKNOWN
+  (2,1) row=[] col=[2026预算 > 收入] UNKNOWN
+  (2,2) row=[] col=[2026预算 > 成本] UNKNOWN
+  NOTE: the (2,1) value 120 has source c05 (not c03) and row title UNKNOWN —
+  the S0 erratum P1-01 case: tbody has no th scope=row, so the first-column
+  data value "A" is NOT used as a row header.
+--- S2 plain 2x3 td-only, no headers (2x3) ---
+slotOwner:
+  ["c00","c01","c02"]
+  ["c03","c04","c05"]
+cells:
+  c00 (0,0) 1x1 TD scope=null section=tbody text="a"
+  c01 (0,1) 1x1 TD scope=null section=tbody text="b"
+  c02 (0,2) 1x1 TD scope=null section=tbody text="c"
+  c03 (1,0) 1x1 TD scope=null section=tbody text="d"
+  c04 (1,1) 1x1 TD scope=null section=tbody text="e"
+  c05 (1,2) 1x1 TD scope=null section=tbody text="f"
+header paths (slot -> rowHeaders | colHeaders | status):
+  (0,0) row=[] col=[] UNKNOWN
+  (0,1) row=[] col=[] UNKNOWN
+  (0,2) row=[] col=[] UNKNOWN
+  (1,0) row=[] col=[] UNKNOWN
+  (1,1) row=[] col=[] UNKNOWN
+  (1,2) row=[] col=[] UNKNOWN
+--- S3 TFK-B-like: tbody th scope=row rowspan=2 (3x2) ---
+slotOwner:
+  ["c00","c01"]
+  ["c02","c03"]
+  ["c02","c04"]
+cells:
+  c00 (0,0) 1x1 TH scope=null section=thead text="项目"
+  c01 (0,1) 1x1 TH scope=null section=thead text="数值"
+  c02 (1,0) 2x1 TH scope=row section=tbody text="部门X"
+  c03 (1,1) 1x1 TD scope=null section=tbody text="a"
+  c04 (2,1) 1x1 TD scope=null section=tbody text="b"
+header paths:
+  (0,0) row=[] col=[项目] UNKNOWN
+  (0,1) row=[] col=[数值] UNKNOWN
+  (1,0) row=[部门X] col=[项目] KNOWN
+  (1,1) row=[部门X] col=[数值] KNOWN
+  (2,0) row=[部门X] col=[项目] KNOWN
+  (2,1) row=[部门X] col=[数值] KNOWN
+  NOTE: the rowspan continuation row (2,1) reuses the same source cell c02
+  and the text "部门X" appears once, not twice.
+--- S4 colspan=3 header grouping (3x3) ---
+slotOwner:
+  ["c00","c00","c00"]
+  ["c01","c02","c03"]
+  ["c04","c05","c06"]
+cells:
+  c00 (0,0) 1x3 TH scope=null section=thead text="总计"
+  c01 (1,0) 1x1 TH scope=null section=thead text="A"
+  c02 (1,1) 1x1 TH scope=null section=thead text="B"
+  c03 (1,2) 1x1 TH scope=null section=thead text="C"
+  c04 (2,0) 1x1 TD scope=null section=tbody text="1"
+  c05 (2,1) 1x1 TD scope=null section=tbody text="2"
+  c06 (2,2) 1x1 TD scope=null section=tbody text="3"
+header paths (slot -> rowHeaders | colHeaders | status):
+  (0,0) row=[] col=[总计 > A] UNKNOWN
+  (0,1) row=[] col=[总计 > B] UNKNOWN
+  (0,2) row=[] col=[总计 > C] UNKNOWN
+  (1,0) row=[] col=[总计 > A] UNKNOWN
+  (1,1) row=[] col=[总计 > B] UNKNOWN
+  (1,2) row=[] col=[总计 > C] UNKNOWN
+  (2,0) row=[] col=[总计 > A] UNKNOWN
+  (2,1) row=[] col=[总计 > B] UNKNOWN
+  (2,2) row=[] col=[总计 > C] UNKNOWN
+  (all slots UNKNOWN: no tbody th scope=row.)
+
+## 6. Valid / invalid examples and explicit UNSUPPORTED errors (real output)
+Valid (accepted, grid built):
+- §6.3 example, plain 2x3, TFK-B-like rowspan=2 row header, colspan=3 grouping,
+  thead-only table, tbody-only table, 1x1 single cell, empty data cells (""),
+  empty header text, bare <tr> under <table> (implicit tbody), uppercase tags,
+  HTML comments, implicit cell/row close by the next cell/row (HTML rule),
+  caption text (captured, not part of the grid), numeric-looking text kept as
+  string ("12345678901234567890", typeof string).
+Invalid (rejected with the frozen enum code; messages verbatim from the run):
+- E1 INVALID_GRID_OVERLAP :: cell at row 1 column 1 (DOM #3) overlaps slot
+  (1,2) already occupied by the cell at row 0 column 2 (DOM #2)
+- E2 INVALID_RAGGED_GRID :: row 1 has no cell covering column 2 (table has
+  3 columns); coverage must run continuously from column 0 to column 2
+- E3 UNSUPPORTED_NESTED_TABLE :: nested <table> is not supported (offset 15)
+- E4 UNSUPPORTED_HEADER_SEMANTICS :: <th> uses a headers attribute (offset 11);
+  explicit headers references are not supported
+- E5 UNSUPPORTED_HEADER_SEMANTICS :: <th> scope="rowgroup" is not supported
+  (offset 11); only scope="row" in tbody and scope="col" in thead are supported
+- E6 INVALID_SPAN :: <td> colspan=9 is outside 1–8 (offset 11)
+- E7 OVER_SIZE :: row 0 already covers all 12 columns, leaving no room for
+  the cell at DOM #12
+- E8 INVALID_RAGGED_GRID :: non-whitespace text outside table cells at offset
+  0: "hello"
+More cases covered by the 67 tests (all passing): rowspan=0/9/abc/2.5,
+rowspan beyond the last row, rowspan crossing the thead/tbody boundary,
+scope="colgroup"/"foo", scope="col" in tbody, scope="row" in thead, headers
+attribute on <td>, two top-level tables, nested table in <caption>, 33 rows,
+132 DOM cells, input >64 KiB, empty table, <b>/<script>/<div>/<tfoot>/
+<colgroup>, multiple thead/tbody, mismatched </td> for <th>, unclosed <table>,
+stray text in <table>, <td> outside <tr>, no <table>, empty input, aborted
+signal -> CANCELLED.
+
+## 7. Documented judgement calls (spec does not pin these down; see parse.ts header)
+J1. The frozen ErrorCode has only 7 codes and no INVALID_HTML / UNSUPPORTED_MARKUP.
+    "No <table>", misplaced structure (multiple thead/tbody, misplaced tr/td,
+    unclosed tags, stray text/elements outside the table) and elements outside
+    the limited subset (<div>/<b>/<script>/<tfoot>/<colgroup> etc.) all map to
+    INVALID_RAGGED_GRID with a message naming the real cause. This is the
+    "grid cannot be formed in the limited subset" bucket, not a claim that the
+    input is a ragged row. Needs T011 / final-review confirmation of the code.
+J2. Multiple top-level <table> elements map to UNSUPPORTED_NESTED_TABLE
+    (§3.1 "多 <table>、嵌套表格拒绝").
+J3. scope="row" in thead and scope="col" in tbody are UNSUPPORTED_HEADER_SEMANTICS
+    (contradictory header semantics). scope on <td> with row/col is ignored
+    (no defined meaning); rowgroup/colgroup/invalid values on <td> are rejected.
+J4. thead/tbody order is not enforced (at most one of each); span boundary is
+    checked per covered row against its actual section. Bare <tr> under <table>
+    is an implicit tbody row (HTML rule). <html>/<head>/<body> wrappers are
+    rejected (not in the limited subset).
+J5. Implicit close of td/th/tr/section at the next structural boundary follows
+    the deterministic HTML rule and is accepted; EOF is not a boundary — any
+    element still open at EOF is rejected. <caption> must be closed explicitly.
+J6. Text normalisation: only ';'-terminated character references are decoded
+    (named table in parse.ts; unknown names stay literal); consecutive ASCII
+    whitespace folds to one U+0020 with trim; a single interior U+00A0
+    (&nbsp;) is preserved as a deliberate character.
+J7. headerStatus is KNOWN only when both row and column paths are non-empty;
+    either missing means UNKNOWN. Per-slot paths are computed for every slot
+    (including th-owned slots); which slots become SlotFacts is T008's job,
+    as is the SHARED_SOURCE_CELL split for multi-slot cells.
+J8. Rows/columns/cells count limits are checked in both parseValidatedTable
+    (bytes, rows, DOM cells) and buildGrid (defensive re-check, plus columns),
+    so each function is correct standalone and the pipeline rejects either way.
+
+## 8. Test coverage (tests/core/t003-temp.test.ts, 67 tests, 67 passed)
+- G01–G08 basic grids (9 tests): plain 2x2, header row, KNOWN row+col header,
+  empty header text, empty data cells, 1x1, thead-only, tbody-only,
+  numeric-looking text stays a string.
+- §6.3 worked example + S0 P1-01 regression (3 tests): slotOwner matrix,
+  cell ids (120 = c05), two-level column paths, row paths empty (no fabrication).
+- G17–G24 rowspan (9 tests): thead rowspan=2, tbody scope=row rowspan=2
+  (continuation reuse), rowspan=3, section-crossing span, rowspan 0/9/abc/2.5,
+  rowspan beyond last row, colspan 9/0.
+- Overlap / ragged / limits (9 tests): overlap, short row, middle hole,
+  empty row, 33 rows, 13 cols, 132 cells, >64 KiB, empty table.
+- Unsupported / invalid inputs (19 tests): nested table (cell/caption),
+  two top-level tables, headers on th/td, scope rowgroup/colgroup/foo,
+  scope col in tbody, scope row in thead, <b>, <script>, <div> wrapper,
+  no table, empty input, <tfoot>, multiple thead/tbody, mismatched end tag,
+  unclosed table, stray text, <td> outside <tr>, <colgroup>.
+- Header UNKNOWN / never fabricate (3 tests): scope-less tbody th is not a
+  row header, headerStatusFor truth table, thead td is not a column header.
+- Entities / whitespace (6 tests): common entities, numeric refs, unknown
+  entity literal, whitespace folding + trim, interior &nbsp; preserved,
+  literal "<" in text.
+- HTML details / cancellation (5 tests): uppercase tags + comments, implicit
+  cell close, implicit row close, aborted signal -> CANCELLED,
+  isTableForkError shape check.
+NOT covered here (T011 scope): the 48 Golden fixtures, 200-seed property
+tests, Oracle cross-check, flatten/witness/compare/records/report behaviour.
+This file must not be quoted as "tests complete".
+
+## 9. Commits (two-step, to avoid self-reference)
+- Step 1 (product commit): parse.ts + grid.ts + headers.ts + tests/core/
+  t003-temp.test.ts + this log file.
+- Step 2 (handoff commit): task_handoffs/P029-T003.json only.
+- Real SHAs are recorded in task_handoffs/P029-T003.json (result_commit =
+  step-1 SHA) and in the final report.
+
+## 10. Open issues (non-blocking; no rollback was needed)
+- J1–J8 above are judgement calls, not spec text; the most consequential is
+  J1 (which enum code exotic invalid markup maps to). Recommend T011 and the
+  final review confirm or re-pin it; changing the mapping later is a
+  one-line-per-site change in parse.ts.
+- WINDOWS_NOT_TESTED (this VM is Linux; no Windows run was made or claimed).
+- CANCELLED is only checked at parse entry points (synchronous ≤64 KiB parse);
+  worker-level cancellation / mid-parse abort is T010's responsibility.
+- No performance measurement was made (p95 ≤500ms is a T012 gate on 32x12
+  inputs); the parse+grid path is a single linear pass over ≤64 KiB with no
+  I/O, but no timing claim is made here.
+- No contract conflict was found: T002's frozen types were sufficient; no
+  spec change, no baseline restore, no first-failure slot to report — the
+  contract landed as written.

@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G23",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><tbody><tr><td rowspan=\"2\" colspan=\"2\">块</td><td>x</td></tr><tr><td>y</td></tr></tbody></table>",
+    "strategy": "REPEAT_VALUE"
+  },
+  "expected_ref": "G23"
+}

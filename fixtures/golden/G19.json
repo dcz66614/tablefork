@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G19",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th rowspan=\"2\">类</th><th>子</th></tr><tr><th>细</th></tr></thead><tbody><tr><td>v</td><td>w</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G19"
+}

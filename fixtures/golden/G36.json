@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G36",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table>\n<tbody>\n<tr><td>  多   空\n格\t表  </td><td>第二</td></tr>\n<tr><td>\n前后\n</td><td>  x  </td></tr>\n</tbody>\n</table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G36"
+}

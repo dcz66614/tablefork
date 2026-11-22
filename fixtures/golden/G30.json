@@ -1,0 +1,10 @@
+{
+  "fixture_id": "G30",
+  "schema": "tablefork.fixture/v1",
+  "input": {
+    "schema": "tablefork.input/v1",
+    "html": "<table><thead><tr><th colspan=\"2\">上</th></tr><tr><th>左</th><th>右</th></tr></thead><tbody><tr><th scope=\"row\" rowspan=\"2\">行组</th><td>1</td></tr><tr><td>2</td></tr></tbody></table>",
+    "strategy": "ORIGIN_EMPTY"
+  },
+  "expected_ref": "G30"
+}
