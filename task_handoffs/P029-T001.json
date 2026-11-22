@@ -1,0 +1,88 @@
+{
+  "artifacts": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "index.html",
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+    "artifacts/logs/T001-env.txt",
+    "task_handoffs/P029-T001.json"
+  ],
+  "base_commit": "e6283a1995fb4e63848227dc5754be76e229e2ec",
+  "commands": [
+    {
+      "cmd": "node -v",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "npm -v",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "node --version; npm --version; node -p \"process.platform + ' ' + process.arch\"; git --version; python3 --version",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "npm ci",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "npm run typecheck",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "npm run build",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "npx playwright install chromium",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "fresh-copy reproduction: npm ci; npm run typecheck; npm run build (in /tmp/p029-clone-test)",
+      "exit_code": 0,
+      "log": "artifacts/logs/T001-env.txt"
+    },
+    {
+      "cmd": "npm test",
+      "exit_code": 1,
+      "log": "artifacts/logs/T001-env.txt"
+    }
+  ],
+  "inputs": [
+    "docs/PROJECT_BOOK.md#9",
+    "docs/IMPLEMENTATION_PLAN.md#2.2",
+    "docs/IMPLEMENTATION_PLAN.md#2.3",
+    "docs/IMPLEMENTATION_PLAN.md#6 (P029-T001)",
+    "docs/P029_IDEATION_REPORT.md"
+  ],
+  "issues": [],
+  "notes": "PASS. 环境脚手架完成，验收命令全部退出 0（npm test 除外：尚无测试文件，exit 1 是预期，记为 NOT_RUN，属 T011 范围）。冻结版本：Node v24.22.1、npm 10.9.4、TypeScript 5.9.3、React/React-DOM 19.3.1、Vite 7.3.8、Vitest 4.1.12、Playwright 1.65.1、tsx 4.23.15、Python 3.12.3（python3；python 命令不存在）。Playwright Chromium 159.0.8154.6 已下载并实测 launch 成功。WINDOWS_NOT_TESTED。占位脚手架：index.html + 仅渲染空根节点的 src/main.tsx + src/vite-env.d.ts，均已标注 T001 占位、由 T009 替换；除此之外无任何业务代码。偏差/ADR（详见 artifacts/logs/T001-env.txt §7）：(1) npm 10.9.4 默认 npm install 因 arborist 'edgesOut' 空指针失败，改用 --legacy-peer-deps 安装成功；lockfile 本身有效，纯 npm ci 在本仓与全新副本中均 exit 0；(2) oracle 脚本用 python3（本机无 python 命令）；(3) 其余目标包族均按计划实测版本冻结，无降级。未解决/留待后卡：npm run oracle / analyze / test:core / test:e2e / verify:release 对应的文件尚不存在（T006/T010/T011/T012/T013），均记 NOT_RUN。result_commit 自指说明：本文件写在提交内，无法预先写最终 SHA；此处填的是包含全部 T001 产物的提交 SHA，最终 HEAD 仅因 amend 修正本字段而不同，两树除本字段外完全一致（见 git log）。",
+  "owner_paths": [
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "index.html",
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+    "artifacts/logs/T001-env.txt",
+    "task_handoffs/P029-T001.json"
+  ],
+  "result": "PASS",
+  "result_commit": "f1af0df4e6b39338573580985a25cbc107e8ecdf",
+  "schema": "tablefork.handoff/v1",
+  "spec_version": "1.0.1",
+  "task_id": "P029-T001"
+}
